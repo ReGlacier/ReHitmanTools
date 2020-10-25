@@ -18,6 +18,8 @@ image:
 
 init:
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
+
+install:
   - git submodule update --init --recursive
 
 before_build:
