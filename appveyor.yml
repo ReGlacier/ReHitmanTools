@@ -1,0 +1,58 @@
+#---------------------------------#
+#       build configuration       #
+#---------------------------------#
+
+# build platform, i.e. x86, x64, Any CPU. This setting is optional.
+platform: x86
+
+branches:
+  only:
+    - main
+
+clone_folder: c:\projects\ReHitmanTools
+
+configuration: Release
+
+image:
+  - Visual Studio 2019
+
+init:
+  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
+  - set project_path=c:\projects\ReHitmanTools
+
+before_build:
+  - cmd: |
+      mkdir build
+      cd build
+      cmake --version
+      cmake -A Win32 -G %generator% ..
+
+build:
+  parallel: true
+  verbosity: normal
+  project: %project_path%\build\ReHitmanTools.sln
+
+# scripts to run after build (working directory and environment changes are persisted from the previous steps)
+after_build: |
+  7z a GlacierTools.zip
+  %project_path%\build\Tools\GMSInfo\Release\HBM_GMSTool.exe
+  %project_path%\build\Tools\GMSInfo\Release\typeids.json
+
+#---------------------------------#
+#      artifacts configuration    #
+#---------------------------------#
+
+artifacts:
+  - path: GlacierTools.zip
+    name: GlacierTools
+
+#---------------------------------#
+#         Discord WebHook         #
+#---------------------------------#
+
+on_success:
+  - ps: Invoke-RestMethod https://raw.githubusercontent.com/DiscordHooks/appveyor-discord-webhook/master/send.ps1 -o send.ps1
+  - ps: ./send.ps1 success $env:WEBHOOK_URL
+on_failure:
+  - ps: Invoke-RestMethod https://raw.githubusercontent.com/DiscordHooks/appveyor-discord-webhook/master/send.ps1 -o send.ps1
+  - ps: ./send.ps1 failure $env:WEBHOOK_URL

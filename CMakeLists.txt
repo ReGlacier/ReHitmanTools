@@ -11,8 +11,16 @@ if(
     message(FATAL_ERROR "The submodules were not downloaded!\nPlease, init submodules via git submodule update --init --recursive")
 endif()
 
+# Options
+SET(JSON_Install OFF CACHE BOOL "Do not generate install target in nlohmann")
+SET(JSON_BuildTests OFF CACHE BOOL "Do not build tests of nlohmann")
+SET(FMT_INSTALL OFF CACHE BOOL "Do not generate install targets of fmt")
+SET(FMT_TEST OFF CACHE BOOL "Do not generate install targets of fmt")
+
+# Modules
 add_subdirectory(Modules/fmt)
 add_subdirectory(Modules/zlib)
 add_subdirectory(Modules/nlohmann)
 
+# Our projects
 add_subdirectory(Tools/GMSInfo)
