@@ -34,10 +34,7 @@ build_script: |
   cmake --build . --config Release
 
 # scripts to run after build (working directory and environment changes are persisted from the previous steps)
-after_build: |
-  7z a GlacierTools.zip
-  c:\projects\ReHitmanTools\build\Tools\GMSInfo\Release\HBM_GMSTool.exe
-  c:\projects\ReHitmanTools\build\Tools\GMSInfo\Release\typeids.json
+after_build: 7z a GlacierTools.zip Tools\GMSInfo\Release\HBM_GMSTool.exe Tools\GMSInfo\Release\typeids.json
 
 #---------------------------------#
 #      artifacts configuration    #
