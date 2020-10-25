@@ -36,13 +36,14 @@ build_script: |
 after_build:
   - cmd: cd c:\projects\ReHitmanTools\build
   - cmd: 7z a GlacierTools.zip Tools\GMSInfo\Release\HBM_GMSTool.exe Tools\GMSInfo\Release\typeids.json
+  - cmd: mv GlacierTools.zip ../GlacierTools.zip
 
 #---------------------------------#
 #      artifacts configuration    #
 #---------------------------------#
 
 artifacts:
-  - path: c:\projects\ReHitmanTools\build\GlacierTools.zip
+  - path: GlacierTools.zip
     name: GlacierTools
 
 #---------------------------------#
