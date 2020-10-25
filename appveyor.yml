@@ -18,7 +18,6 @@ image:
 
 init:
   - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
-  - set project_path=c:\projects\ReHitmanTools
 
 before_build:
   - cmd: |
@@ -30,13 +29,13 @@ before_build:
 build:
   parallel: true
   verbosity: normal
-  project: %project_path%\build\ReHitmanTools.sln
+  project: c:\projects\ReHitmanTools\build\ReHitmanTools.sln
 
 # scripts to run after build (working directory and environment changes are persisted from the previous steps)
 after_build: |
   7z a GlacierTools.zip
-  %project_path%\build\Tools\GMSInfo\Release\HBM_GMSTool.exe
-  %project_path%\build\Tools\GMSInfo\Release\typeids.json
+  c:\projects\ReHitmanTools\build\Tools\GMSInfo\Release\HBM_GMSTool.exe
+  c:\projects\ReHitmanTools\build\Tools\GMSInfo\Release\typeids.json
 
 #---------------------------------#
 #      artifacts configuration    #
