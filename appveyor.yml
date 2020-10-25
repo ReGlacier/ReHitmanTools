@@ -42,7 +42,7 @@ after_build:
 #---------------------------------#
 
 artifacts:
-  - path: GlacierTools.zip
+  - path: c:\projects\ReHitmanTools\build\GlacierTools.zip
     name: GlacierTools
 
 #---------------------------------#
