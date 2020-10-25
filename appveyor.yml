@@ -33,7 +33,9 @@ build:
 build_script: |
   cmake --build . --config Release
 
-after_build: 7z a GlacierTools.zip  %APPVEYOR_BUILD_FOLDER%\build\Tools\GMSInfo\Release\HBM_GMSTool\*
+after_build:
+  - cmd: cd c:\projects\ReHitmanTools\build
+  - cmd: 7z a GlacierTools.zip Tools\GMSInfo\Release\HBM_GMSTool.exe Tools\GMSInfo\Release\typeids.json
 
 #---------------------------------#
 #      artifacts configuration    #
