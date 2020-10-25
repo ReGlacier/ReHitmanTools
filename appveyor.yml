@@ -33,7 +33,7 @@ build:
 build_script: |
   cmake --build . --config Release
 
-after_build: 7z a GlacierTools.zip 'Tools\GMSInfo\Release\HBM_GMSTool\*'
+after_build: 7z a GlacierTools.zip Tools/GMSInfo/Release/HBM_GMSTool/*
 
 #---------------------------------#
 #      artifacts configuration    #
