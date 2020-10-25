@@ -1,0 +1,9 @@
+[submodule "Modules/fmt"]
+	path = Modules/fmt
+	url = https://github.com/fmtlib/fmt
+[submodule "Modules/nlohmann"]
+	path = Modules/nlohmann
+	url = https://github.com/nlohmann/json
+[submodule "Modules/zlib"]
+	path = Modules/zlib
+	url = https://github.com/madler/zlib
