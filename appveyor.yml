@@ -16,9 +16,6 @@ configuration: Release
 image:
   - Visual Studio 2019
 
-init:
-  - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
-
 install:
   - git submodule update --init --recursive
 
@@ -27,7 +24,7 @@ before_build:
       mkdir build
       cd build
       cmake --version
-      cmake -A Win32 -G %generator% ..
+      cmake -A Win32 -G "Visual Studio 16 2019" ..
 
 build:
   parallel: true
