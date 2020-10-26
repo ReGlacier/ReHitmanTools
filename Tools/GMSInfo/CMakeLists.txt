@@ -7,7 +7,9 @@ if (NOT CMAKE_SIZEOF_VOID_P EQUAL 4) # TODO: Think about how to do it better
     message(FATAL_ERROR "Supported only x86 arch!")
 endif()
 
-add_executable(HBM_GMSTool ${CMAKE_CURRENT_SOURCE_DIR}/source/main.cpp)
+file(GLOB_RECURSE GMSTOOL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cc ${CMAKE_CURRENT_SOURCE_DIR}/source/*.c)
+add_executable(HBM_GMSTool ${GMSTOOL_SOURCES})
+
 target_link_libraries(HBM_GMSTool PRIVATE fmt::fmt nlohmann_json zlibstatic)
 target_compile_definitions(HBM_GMSTool PRIVATE -D_CRT_SECURE_NO_WARNINGS=1)
 target_include_directories(HBM_GMSTool PRIVATE

@@ -83,5 +83,10 @@
   "0x100034":  ["ZSlider","ZCONTROL"],
   "0x8000049": ["ZWINOBJSPRITEHOLDER","ZLIST"],
   "0x20004C":  ["ZKerningFont","ZTTFONT"],
-  "0x80100032": ["ZCONTROL","ZWINGROUP"]
+  "0x80100032": ["ZCONTROL","ZWINGROUP"],
+  "0x100434":  ["ZHM3ItemAmmo","ZItemAmmo"],
+  "0x10042B":  ["ZHM3ItemWeapon","ZItemWeapon"],
+  "0x10042D":  ["ZHM3ItemWeaponCustom","ZHM3ItemWeapon"],
+  "0x4000022": ["ZSHAPE","ZGEOM"],
+  "0x1007D3":  ["ZItemTemplate","ZGROUP"]
 }

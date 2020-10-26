@@ -9,15 +9,15 @@
 
 #include <array>
 #include <string>
+#include <fstream>
 #include <unordered_map>
 
 extern "C" {
 #include "zlib.h"
 }
 
-#include "GlacierTypeDefs.h"
-
-#include "nlohmann/json.hpp"
+#include <GlacierTypeDefs.h>
+#include <nlohmann/json.hpp>
 #include <fmt/format.h>
 
 #define GLACIER_GMS_ZLIB_WBTS -15
@@ -43,34 +43,25 @@ std::unordered_map<std::string, std::array<std::string, 2>> g_typeInfoDB;
 
 void loadTypesDataBase()
 {
-    FILE* fp = fopen("typeids.json", "r");
-    if (!fp)
+    std::ifstream fileStream("typeids.json", std::ifstream::binary);
+    if (!fileStream)
     {
-        printf("Failed to load typeids.json! All types will not be undecorated!\n");
+        printf("Failed to open typeids.json! All types will be not resolved!\n");
         return;
     }
 
-    fseek(fp, 0L, SEEK_END);
-    size_t bufferSize = ftell(fp);
-    rewind(fp);
-    char* buffer = (char*)calloc(1, bufferSize);
-    fread(buffer, bufferSize, 1, fp);
-    fclose(fp);
-
-    std::string sv(buffer, bufferSize);
-
-    /// parse json
     try
     {
-        nlohmann::json j = nlohmann::json::parse(sv);
-        nlohmann::adl_serializer<decltype(g_typeInfoDB)>::from_json(j, g_typeInfoDB);
-        printf("Type Information Database loaded!\n");
-    }
-    catch (nlohmann::json::exception& ex)
+        auto db = nlohmann::json::parse(fileStream);
+        nlohmann::adl_serializer<decltype(g_typeInfoDB)>::from_json(db, g_typeInfoDB);
+        printf("Type information DB loaded!\n");
+    } catch (nlohmann::json::exception& ex)
     {
         printf("Bad typeids.json file! JSON Error: %s\n", ex.what());
         throw;
     }
+
+    fileStream.close();
 }
 
 std::string getEntityTypeAsStringIfItPossible(unsigned int typeIndex)
