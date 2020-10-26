@@ -7,12 +7,15 @@ if (NOT CMAKE_SIZEOF_VOID_P EQUAL 4) # TODO: Think about how to do it better
     message(FATAL_ERROR "Supported only x86 arch!")
 endif()
 
-file(GLOB_RECURSE GMSTOOL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cc ${CMAKE_CURRENT_SOURCE_DIR}/source/*.c)
+file(GLOB_RECURSE GMSTOOL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(HBM_GMSTool ${GMSTOOL_SOURCES})
 
-target_link_libraries(HBM_GMSTool PRIVATE fmt::fmt nlohmann_json zlibstatic)
+target_link_libraries(HBM_GMSTool PRIVATE nlohmann_json zlibstatic argh minizip)
+target_link_libraries(HBM_GMSTool PUBLIC spdlog)
+
 target_compile_definitions(HBM_GMSTool PRIVATE -D_CRT_SECURE_NO_WARNINGS=1)
 target_include_directories(HBM_GMSTool PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../../Modules/zlib # hotfix for zlib
         ${CMAKE_CURRENT_BINARY_DIR}
         $<TARGET_FILE_DIR:zlibstatic>/.. # hotfix for zlib (final path contains type of build)

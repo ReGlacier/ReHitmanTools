@@ -7,3 +7,9 @@
 [submodule "Modules/zlib"]
 	path = Modules/zlib
 	url = https://github.com/madler/zlib
+[submodule "Modules/argh"]
+	path = Modules/argh
+	url = https://github.com/adishavit/argh
+[submodule "Modules/spdlog"]
+	path = Modules/spdlog
+	url = https://github.com/gabime/spdlog

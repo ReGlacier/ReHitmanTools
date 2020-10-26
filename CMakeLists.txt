@@ -16,10 +16,15 @@ SET(JSON_Install OFF CACHE BOOL "Do not generate install target in nlohmann")
 SET(JSON_BuildTests OFF CACHE BOOL "Do not build tests of nlohmann")
 SET(FMT_INSTALL OFF CACHE BOOL "Do not generate install targets of fmt")
 SET(FMT_TEST OFF CACHE BOOL "Do not generate install targets of fmt")
+SET(ZLIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/Modules/zlib")
+SET(SPDLOG_FMT_EXTERNAL_HO ON CACHE BOOL "Do not use own fmt")
 
 # Modules
 add_subdirectory(Modules/fmt)
+add_subdirectory(Modules/argh)
 add_subdirectory(Modules/zlib)
+add_subdirectory(Modules/spdlog)
+add_subdirectory(Modules/minizip)
 add_subdirectory(Modules/nlohmann)
 
 # Our projects
