@@ -8,7 +8,6 @@
 import sys
 import json
 import datetime
-from typing import Callable
 
 
 class TypeRow:
@@ -75,7 +74,7 @@ def generate_definitions(input_definitions_file, output_cpp_header_file):
             cpp_header_output_file.write("namespace Glacier {\n")
             # Generate enum
             cpp_header_output_file.write("\tenum TypeId : unsigned int {\n")
-            get_type_name: Callable[[TypeRow], str] = lambda t: "\t\t{} = {}".format(t.PrettyName, t.HexIndex)
+            get_type_name = lambda t: "\t\t{} = {}".format(t.PrettyName, t.HexIndex)
             cpp_header_output_file.write(',\n'.join(map(get_type_name, class_list)))
             # Print footer
             cpp_header_output_file.write("\n\t};\n\n")

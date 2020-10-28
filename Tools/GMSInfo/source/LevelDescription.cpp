@@ -17,6 +17,8 @@ namespace ReGlacier
     {
         std::string ArchivePath;
         LevelAssets Assets;
+        LevelContainer::Ptr Container;
+        GMS::Ptr GMSInstance;
 
         unzFile Zip { nullptr };
 
@@ -76,11 +78,31 @@ namespace ReGlacier
             return;
         }
 
-        auto container = std::make_unique<LevelContainer>(m_context->Zip);
-        auto gms = GMS { m_context->Assets.GMS, container.get(), &m_context->Assets };
+        m_context->Container = std::make_unique<LevelContainer>(m_context->Zip);
+        m_context->GMSInstance = std::make_unique<GMS>(m_context->Assets.GMS, m_context->Container.get(), &m_context->Assets);
+        m_context->GMSInstance->Load();
+    }
 
-        gms.Load();
-        gms.PrintInfo();
+    void LevelDescription::PrintInfo()
+    {
+        if (m_context)
+        {
+            if (m_context->GMSInstance)
+            {
+                m_context->GMSInstance->PrintInfo();
+            }
+        }
+    }
+
+    void LevelDescription::ExportUncompressedGMS(const std::string& path)
+    {
+        if (!m_context || !m_context->GMSInstance)
+        {
+            spdlog::error("LevelDescription::ExportUncompressedGMS| Call AnalyzeGMS() before!");
+            return;
+        }
+
+        m_context->GMSInstance->SaveUncompressed(path);
     }
 
     bool LevelDescription::ValidateLevelArchive()
@@ -131,7 +153,7 @@ namespace ReGlacier
             spdlog::info("Level structure resolved!");
         }
 
-        unzSetOffset(m_context->Zip, 0);
+        unzGoToFirstFile(m_context->Zip);
         return true;
     }
 }

@@ -9,11 +9,16 @@
 #include <TypesDataBase.h>
 #include <LevelDescription.h>
 
+static constexpr const char* kDefaultTypeStorageFile = "typeids.json";
+
 int main(int argc, char** argv)
 {
     argh::parser cli(argc, argv);
+
+    bool printLevelInfo;
     std::string levelArchivePath;
     std::string typesDataBaseFilePath;
+    std::string uncompressedGMSPath;
 
     if (!(cli({"-L", "\"--level\""}) >> levelArchivePath))
     {
@@ -21,7 +26,9 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    cli("--types", "typeids.json") >> typesDataBaseFilePath;
+    cli("--types", kDefaultTypeStorageFile) >> typesDataBaseFilePath;
+    cli("--export-gms", "") >> uncompressedGMSPath;
+    cli("--print-info", false) >> printLevelInfo;
 
     if (!ReGlacier::TypesDataBase::GetInstance().Load(typesDataBaseFilePath))
     {
@@ -38,6 +45,12 @@ int main(int argc, char** argv)
     }
 
     level->AnalyzeGMS();
+
+    if (printLevelInfo)
+        level->PrintInfo();
+
+    if (!uncompressedGMSPath.empty())
+        level->ExportUncompressedGMS(uncompressedGMSPath);
 
     return 0;
 }

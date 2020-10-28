@@ -8,6 +8,7 @@
 #include <spdlog/spdlog.h>
 
 #include <utility>
+#include <fstream>
 
 extern "C" {
 #include <zlib.h>
@@ -78,35 +79,35 @@ namespace ReGlacier
     {
         assert(!m_isLoaded);
 
-        size_t bufferSize = 0;
-        auto buffer = m_container->Read(m_name, bufferSize);
+        auto buffer = GetRawGMS(nullptr);
 
-        if (!buffer) {
-            spdlog::error("GMS::PrintInfo() | Unable to read GMS file {}", m_name);
+        LoadEntities(std::move(buffer));
+
+        m_isLoaded = true;
+    }
+
+    void GMS::SaveUncompressed(const std::string& filePath)
+    {
+        std::fstream stream(filePath, std::ios::out | std::ios::binary | std::ios::app);
+        if (!stream)
+        {
+            spdlog::error("GMS::SaveUncompressed| Failed to create file {} to write binary", filePath);
             return;
         }
 
-        // Uncompress (legacy, TODO: Refactor!)
-        auto raw = reinterpret_cast<char*>(buffer.get());
+        size_t bufferSize = 0;
+        auto buffer = m_container->Read(m_name, bufferSize);
 
-        Legacy::GMS2 gms = { 0 };
-        gms.field_0 = 1;
-        gms.m_raw = (int)raw;
+        if (!buffer)
+        {
+            spdlog::error("GMS::SaveUncompressed| Failed to load GMS!");
+            return;
+        }
 
-        int v5 = *(unsigned long*)raw;
-
-        gms.field_C = v5;
-        gms.field_8 = *(unsigned long*)(raw + 4);
-        gms.field_14 = (*(unsigned char*)(raw + 8)) != 0;
-
-        int outBuffSize = (v5 + 15) & 0xFFFFFFF0;
-
-        auto outBuffer = std::make_unique<char[]>(outBuffSize);
-        Legacy::GMS_Decompress(&gms, outBuffer.get(), outBuffSize);
-
-        LoadEntities(std::move(outBuffer));
-
-        m_isLoaded = true;
+        int uncompressedBufferSize = 0;
+        auto buff = GetRawGMS(&uncompressedBufferSize);
+        stream.write(reinterpret_cast<const char*>(buffer.get()), uncompressedBufferSize);
+        stream.close();
     }
 
     void GMS::PrintInfo() {
@@ -138,6 +139,11 @@ namespace ReGlacier
     const std::vector<std::string> & GMS::GetExcludedAnimations() const
     {
         return m_excludedAnimationsList;
+    }
+
+    const std::vector<GMSLinkRef>& GMS::GetLinkReferences() const
+    {
+        return m_linkRefs;
     }
 
     void GMS::LoadEntities(std::unique_ptr<char[]>&& gmsBuffer)
@@ -231,5 +237,41 @@ namespace ReGlacier
         {
             m_excludedAnimationsList.emplace_back(animName.data(), animName.length());
         }
+    }
+
+    std::unique_ptr<char[]> GMS::GetRawGMS(int* outBufferSize)
+    {
+        size_t bufferSize = 0;
+        auto buffer = m_container->Read(m_name, bufferSize);
+
+        if (!buffer) {
+            spdlog::error("GMS::GetRawGMS() | Unable to read GMS file {}", m_name);
+            return nullptr;
+        }
+
+        // Uncompress (legacy, TODO: Refactor!)
+        auto raw = reinterpret_cast<char*>(buffer.get());
+
+        Legacy::GMS2 gms = { 0 };
+        gms.field_0 = 1;
+        gms.m_raw = (int)raw;
+
+        int v5 = *(unsigned long*)raw;
+
+        gms.field_C = v5;
+        gms.field_8 = *(unsigned long*)(raw + 4);
+        gms.field_14 = (*(unsigned char*)(raw + 8)) != 0;
+
+        int outBuffSize = (v5 + 15) & 0xFFFFFFF0;
+
+        auto outBuffer = std::make_unique<char[]>(outBuffSize);
+        Legacy::GMS_Decompress(&gms, outBuffer.get(), outBuffSize);
+
+        if (outBufferSize)
+        {
+            *outBufferSize = outBuffSize;
+        }
+
+        return std::move(outBuffer);
     }
 }

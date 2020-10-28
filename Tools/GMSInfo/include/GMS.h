@@ -42,16 +42,21 @@ namespace ReGlacier
         int32_t m_totalLinkRefsCount = 0;
         std::vector<GMSLinkRef>  m_linkRefs;
     public:
+        using Ptr = std::unique_ptr<GMS>;
+
         GMS(std::string  name, LevelContainer* levelContainer, LevelAssets* levelAssets);
 
         void Load();
-
+        void SaveUncompressed(const std::string& filePath);
         void PrintInfo();
-        [[nodiscard]] const std::vector<std::string>& GetExcludedAnimations() const;
 
+        [[nodiscard]] const std::vector<std::string>& GetExcludedAnimations() const;
+        [[nodiscard]] const std::vector<GMSLinkRef>& GetLinkReferences() const;
     private:
         void LoadEntities(std::unique_ptr<char[]>&& buffer);
         void LoadImportTable(const char* gmsBuffer);
         void LoadExcludedAnimations(char* gmsBuffer, char* bufBuffer);
+
+        std::unique_ptr<char[]> GetRawGMS(int* bufferSize);
     };
 }
