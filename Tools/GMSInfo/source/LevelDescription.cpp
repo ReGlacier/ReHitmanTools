@@ -102,7 +102,12 @@ namespace ReGlacier
             return;
         }
 
-        m_context->GMSInstance->SaveUncompressed(path);
+        if (m_context->GMSInstance->SaveUncompressed(path))
+        {
+            spdlog::info("Raw GMS file exported to {}", path);
+        } else {
+            spdlog::error("Failed to save raw GMS file to {}. Please, check the log", path);
+        }
     }
 
     bool LevelDescription::ValidateLevelArchive()

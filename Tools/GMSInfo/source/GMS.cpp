@@ -79,20 +79,21 @@ namespace ReGlacier
     {
         assert(!m_isLoaded);
 
-        auto buffer = GetRawGMS(nullptr);
+        int bufferSize = 0;
+        auto buffer = GetRawGMS(bufferSize);
 
         LoadEntities(std::move(buffer));
 
         m_isLoaded = true;
     }
 
-    void GMS::SaveUncompressed(const std::string& filePath)
+    bool GMS::SaveUncompressed(const std::string& filePath)
     {
         std::fstream stream(filePath, std::ios::out | std::ios::binary | std::ios::app);
         if (!stream)
         {
             spdlog::error("GMS::SaveUncompressed| Failed to create file {} to write binary", filePath);
-            return;
+            return false;
         }
 
         size_t bufferSize = 0;
@@ -101,13 +102,24 @@ namespace ReGlacier
         if (!buffer)
         {
             spdlog::error("GMS::SaveUncompressed| Failed to load GMS!");
-            return;
+            return false;
         }
 
         int uncompressedBufferSize = 0;
-        auto buff = GetRawGMS(&uncompressedBufferSize);
-        stream.write(reinterpret_cast<const char*>(buffer.get()), uncompressedBufferSize);
+        auto buff = GetRawGMS(uncompressedBufferSize);
+        if (buff)
+        {
+            stream.write(reinterpret_cast<const char*>(buffer.get()), uncompressedBufferSize);
+            stream.flush();
+        }
+        else
+        {
+            spdlog::error("GMS::GetRawGMS() failed to extract raw contents");
+            return false;
+        }
         stream.close();
+
+        return true;
     }
 
     void GMS::PrintInfo() {
@@ -239,7 +251,7 @@ namespace ReGlacier
         }
     }
 
-    std::unique_ptr<char[]> GMS::GetRawGMS(int* outBufferSize)
+    std::unique_ptr<char[]> GMS::GetRawGMS(int& outBufferSize)
     {
         size_t bufferSize = 0;
         auto buffer = m_container->Read(m_name, bufferSize);
@@ -256,21 +268,16 @@ namespace ReGlacier
         gms.field_0 = 1;
         gms.m_raw = (int)raw;
 
-        int v5 = *(unsigned long*)raw;
+        int v5 = *(int*)raw;
 
         gms.field_C = v5;
-        gms.field_8 = *(unsigned long*)(raw + 4);
+        gms.field_8 = *(unsigned int*)(raw + 4);
         gms.field_14 = (*(unsigned char*)(raw + 8)) != 0;
 
-        int outBuffSize = (v5 + 15) & 0xFFFFFFF0;
+        outBufferSize = (v5 + 15) & 0xFFFFFFF0; ///GOT WRONG SIZE
 
-        auto outBuffer = std::make_unique<char[]>(outBuffSize);
-        Legacy::GMS_Decompress(&gms, outBuffer.get(), outBuffSize);
-
-        if (outBufferSize)
-        {
-            *outBufferSize = outBuffSize;
-        }
+        auto outBuffer = std::make_unique<char[]>(outBufferSize);
+        Legacy::GMS_Decompress(&gms, outBuffer.get(), outBufferSize);
 
         return std::move(outBuffer);
     }

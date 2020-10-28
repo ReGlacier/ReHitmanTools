@@ -39,7 +39,7 @@ namespace ReGlacier
         try {
             auto db = nlohmann::json::parse(fileStream);
             nlohmann::adl_serializer<decltype(m_db)>::from_json(db, m_db);
-            spdlog::info("Type information DB loaded\n");
+            spdlog::info("Type information DB loaded");
         } catch (nlohmann::json::exception& ex) {
             spdlog::error("Invalid types data base file {}. Parse error: {}", path, ex.what());
             return false;

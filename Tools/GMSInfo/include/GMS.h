@@ -47,7 +47,7 @@ namespace ReGlacier
         GMS(std::string  name, LevelContainer* levelContainer, LevelAssets* levelAssets);
 
         void Load();
-        void SaveUncompressed(const std::string& filePath);
+        bool SaveUncompressed(const std::string& filePath);
         void PrintInfo();
 
         [[nodiscard]] const std::vector<std::string>& GetExcludedAnimations() const;
@@ -57,6 +57,6 @@ namespace ReGlacier
         void LoadImportTable(const char* gmsBuffer);
         void LoadExcludedAnimations(char* gmsBuffer, char* bufBuffer);
 
-        std::unique_ptr<char[]> GetRawGMS(int* bufferSize);
+        std::unique_ptr<char[]> GetRawGMS(int& bufferSize);
     };
 }
