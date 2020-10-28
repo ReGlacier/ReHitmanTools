@@ -74,7 +74,10 @@ namespace ReGlacier
         , m_assets(levelAssets)
     {}
 
-    void GMS::PrintInfo() {
+    void GMS::Load()
+    {
+        assert(!m_isLoaded);
+
         size_t bufferSize = 0;
         auto buffer = m_container->Read(m_name, bufferSize);
 
@@ -83,7 +86,7 @@ namespace ReGlacier
             return;
         }
 
-        // Uncompress
+        // Uncompress (legacy, TODO: Refactor!)
         auto raw = reinterpret_cast<char*>(buffer.get());
 
         Legacy::GMS2 gms = { 0 };
@@ -101,93 +104,132 @@ namespace ReGlacier
         auto outBuffer = std::make_unique<char[]>(outBuffSize);
         Legacy::GMS_Decompress(&gms, outBuffer.get(), outBuffSize);
 
-        spdlog::info("??");
-        EnumerateEntities(std::move(outBuffer));
+        LoadEntities(std::move(outBuffer));
+
+        m_isLoaded = true;
     }
 
-    void GMS::EnumerateEntities(std::unique_ptr<char[]>&& gmsBuffer)
+    void GMS::PrintInfo() {
+        if (!m_isLoaded)
+        {
+            Load();
+        }
+        assert(m_isLoaded);
+
+        {
+            auto& db = TypesDataBase::GetInstance();
+
+            spdlog::info("GMS Linking table");
+            for (const auto& linkRef : m_linkRefs)
+            {
+                spdlog::info("#{:06d} as {}", linkRef.index, db.GetEntityTypeById(linkRef.typeInfo.index));
+            }
+        }
+
+        {
+            spdlog::info("GMS| Excluded animations");
+            for (const auto& anim : m_excludedAnimationsList)
+            {
+                spdlog::info(" * {}", anim);
+            }
+        }
+    }
+
+    const std::vector<std::string> & GMS::GetExcludedAnimations() const
+    {
+        return m_excludedAnimationsList;
+    }
+
+    void GMS::LoadEntities(std::unique_ptr<char[]>&& gmsBuffer)
     {
         std::unique_ptr<char[]> data = std::move(gmsBuffer);
         char* buffer = data.get();
 
-        size_t prmSize = 0;
-        size_t bufSize = 0;
+        size_t prmSize = 0, bufSize = 0;
 
         auto prm = m_container->Read(m_assets->PRM, prmSize);
         auto buf = m_container->Read(m_assets->BUF, bufSize);
 
         if (!prm)
         {
-            spdlog::error("GMS::EnumerateEntities() Failed to read PRM file {}", m_assets->PRM);
+            spdlog::error("GMS::LoadEntities() Failed to read PRM file {}", m_assets->PRM);
             return;
         }
 
         if (!buf)
         {
-            spdlog::error("GMS::EnumerateEntities() Failed to read BUF file {}", m_assets->BUF);
+            spdlog::error("GMS::LoadEntities() Failed to read BUF file {}", m_assets->BUF);
             return;
         }
 
-#define G_AT(x) (*(((int*)buffer) + x))
-        int flag_0x10 = G_AT(0x10);
-        int flag_0x11 = G_AT(0x11);
-#undef G_AT
+        auto BUFBuffer = reinterpret_cast<char*>(buf.get());
 
-        int totalEntitiesCount = *(int*)&buffer[*(int*)buffer];
-        spdlog::info(" ---------------[ GMS ]--------------- ");
-        spdlog::info("Total entities: {}", totalEntitiesCount);
-        spdlog::info("Flag [0x10]: {:X}", flag_0x10);
-        spdlog::info("Flag [0x11]: {:X}", flag_0x11);
+        LoadImportTable(buffer);
+        LoadExcludedAnimations(buffer, BUFBuffer);
+    }
 
-        spdlog::info(" AF table");
-        spdlog::info("--------------");
-        int afEntitiesCount = *(int*)(&buf[flag_0x11]);
-        spdlog::info("Total entities: {}", afEntitiesCount);
-
-        int entityNum = 0;
-        char* afPtr = (char*)(&buf[flag_0x11] + sizeof(int)) + 1;
-        std::string_view afid { afPtr };
-
-        // TODO: Loop
-        spdlog::info("[{:4}] {}", entityNum, afid);
-
-        spdlog::info(" Import table");
-        spdlog::info("--------------");
-        spdlog::info("Index |    Ref    |Pointer | Type ID");
+    void GMS::LoadImportTable(const char* buffer)
+    {
+        m_totalLinkRefsCount = *(int*)&buffer[*(int*)buffer];
 
         int entityLocator = 0;
-        int entityIndex = 0;
+        uint32_t entityIndex = 0;
 
         auto& db = TypesDataBase::GetInstance();
 
+        m_linkRefs.reserve(m_totalLinkRefsCount);
+
         while (true)
         {
+            //TODO: Think how to wrap that into the structure
             entityLocator = *(int*)(&buffer[8 * entityIndex + 4] + *(int*)buffer) & 0xFFFFFF;
             unsigned int entityType = *(int*)(&buffer[4 * entityLocator + 20]);
-            const bool isLoaderContents = entityType == Glacier::TypeId::ZLoader_Sequence_Setup_ZSTDOBJ;
+            //const bool isLoaderContents = entityType == Glacier::TypeId::ZLoader_Sequence_Setup_ZSTDOBJ;
 
-            int ptr = (int)&buffer[4 * entityLocator];
-            std::string typeInfoStr = db.GetEntityTypeById(entityType);
+            //int ptr = (int)&buffer[4 * entityLocator];
+            m_linkRefs.emplace_back(entityIndex, entityType, db.HasDefinitionForEntityTypeId(entityType));
 
-            printf("#%.4d | %.9X | %.8X | %s\n", entityIndex, entityLocator, ptr, typeInfoStr.c_str());
-
-            if (db.HasDefinitionForEntityTypeId(entityType) && static_cast<Glacier::TypeId>(entityType) == Glacier::TypeId::ZHitman3_ZPlayer)
+            if (++entityIndex == m_totalLinkRefsCount)
             {
-                printf("Player!\n");
-            }
-
-            if (isLoaderContents)
-            {
-                //TODO: Save XML
-            }
-
-            if (++entityIndex == totalEntitiesCount)
-            {
-                printf("--------------- END OF GMS TABLE ---------------\n");
-                break;
+                return;
             }
         }
 
         //result = &prmBuffer[*((int*)v7 + 3)];
+    }
+
+    std::vector<std::string_view> ParseIOISmartString(const char* string, int awaitEntitiesCount)
+    {
+        if (!string || !awaitEntitiesCount)
+            return {};
+
+        std::vector<std::string_view> result;
+        // First string not declared
+        auto caretPointer = string;
+        do {
+            int lengthOfString = static_cast<int>(caretPointer[0]); // NOLINT(cert-str34-c)
+            ++caretPointer;
+
+            result.emplace_back(caretPointer, lengthOfString);
+            caretPointer += lengthOfString;
+            --awaitEntitiesCount;
+        } while (awaitEntitiesCount);
+
+        return result;
+    }
+
+    void GMS::LoadExcludedAnimations(char* gmsBuffer, char* bufBuffer)
+    {
+        auto excludedAnimationsOffset = ((int*)gmsBuffer)[0x11];
+        auto totalExcludedAnimations  = ((int*)bufBuffer)[excludedAnimationsOffset / sizeof(int)];
+        auto excludedAnimationsBuffer = (char*)&((char*)bufBuffer)[excludedAnimationsOffset + 4];
+        auto parsedAnimationsList = ParseIOISmartString(excludedAnimationsBuffer, totalExcludedAnimations);
+
+        parsedAnimationsList.reserve(parsedAnimationsList.size());
+
+        for (auto&& animName : parsedAnimationsList)
+        {
+            m_excludedAnimationsList.emplace_back(animName.data(), animName.length());
+        }
     }
 }

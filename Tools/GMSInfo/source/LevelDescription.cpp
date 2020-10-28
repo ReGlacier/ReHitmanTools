@@ -79,6 +79,7 @@ namespace ReGlacier
         auto container = std::make_unique<LevelContainer>(m_context->Zip);
         auto gms = GMS { m_context->Assets.GMS, container.get(), &m_context->Assets };
 
+        gms.Load();
         gms.PrintInfo();
     }
 

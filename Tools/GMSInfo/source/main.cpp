@@ -1,20 +1,12 @@
 /**
  GMS Tool for Hitman Blood Money
  **/
-#include <cstdint>
-#include <cstring>
-#include <cstdlib>
-#include <cassert>
-#include <cstdio>
-
 #include <string>
 
 #include <argh.h>
 #include <spdlog/spdlog.h>
 
 #include <TypesDataBase.h>
-#include <GlacierTypeDefs.h>
-#include <ZPackedDataChunk.h>
 #include <LevelDescription.h>
 
 int main(int argc, char** argv)
