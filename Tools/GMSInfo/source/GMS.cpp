@@ -96,20 +96,11 @@ namespace ReGlacier
             return false;
         }
 
-        size_t bufferSize = 0;
-        auto buffer = m_container->Read(m_name, bufferSize);
-
-        if (!buffer)
-        {
-            spdlog::error("GMS::SaveUncompressed| Failed to load GMS!");
-            return false;
-        }
-
         int uncompressedBufferSize = 0;
         auto buff = GetRawGMS(uncompressedBufferSize);
         if (buff)
         {
-            stream.write(reinterpret_cast<const char*>(buffer.get()), uncompressedBufferSize);
+            stream.write(reinterpret_cast<const char*>(buff.get()), uncompressedBufferSize);
             stream.flush();
         }
         else
@@ -118,7 +109,7 @@ namespace ReGlacier
             return false;
         }
         stream.close();
-
+        
         return true;
     }
 
