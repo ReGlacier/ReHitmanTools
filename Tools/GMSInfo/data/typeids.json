@@ -93,5 +93,7 @@
   "0x200449":  ["ZHM3Boid","ZIKLNKOBJ"],
   "0x20044A":  ["ZModifiableCloth","ZSTDOBJ"],
   "0x200114":  ["ZFadeFullScreen","ZSTDOBJ"],
-  "0x8000F9":  ["ZGateLightSpot","ZSPOTLIGHT"]
+  "0x8000F9":  ["ZGateLightSpot","ZSPOTLIGHT"],
+  "0x2000E2":  ["ZParticleBox","ZSTDOBJ"],
+  "0x2000E8":  ["ZCubeGridParticles","ZCubeGrid"]
 }

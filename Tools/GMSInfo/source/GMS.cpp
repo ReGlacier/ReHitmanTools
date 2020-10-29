@@ -69,6 +69,11 @@ namespace Legacy
 
 namespace ReGlacier
 {
+    enum GMSOffsets : unsigned int {
+        ExcludedAnimationsRegionAddr = 0x11,
+        WeaponHandlesRegionAddr = 0x10
+    };
+
     GMS::GMS(std::string name, LevelContainer* levelContainer, LevelAssets* levelAssets)
         : m_name(std::move(name))
         , m_container(levelContainer)
@@ -109,7 +114,7 @@ namespace ReGlacier
             return false;
         }
         stream.close();
-        
+
         return true;
     }
 
@@ -123,7 +128,7 @@ namespace ReGlacier
         {
             auto& db = TypesDataBase::GetInstance();
 
-            spdlog::info("GMS Linking table");
+            spdlog::info("GMS Linking table (total {})", m_linkRefs.size());
             for (const auto& linkRef : m_linkRefs)
             {
                 spdlog::info("#{:06d} as {}", linkRef.index, db.GetEntityTypeById(linkRef.typeInfo.index));
@@ -131,10 +136,35 @@ namespace ReGlacier
         }
 
         {
-            spdlog::info("GMS| Excluded animations");
-            for (const auto& anim : m_excludedAnimationsList)
+            if (!m_excludedAnimationsList.empty())
             {
-                spdlog::info(" * {}", anim);
+                spdlog::info("GMS| Excluded animations");
+                for (const auto& anim : m_excludedAnimationsList)
+                {
+                    spdlog::info(" * {}", anim);
+                }
+            }
+            else
+            {
+                spdlog::info("GMS| No excluded animations");
+            }
+        }
+
+        {
+            if (!m_weaponHandles.empty())
+            {
+                spdlog::info("Weapon handles (total {}):", m_weaponHandlesCount);
+                spdlog::info("------------------------------");
+
+                spdlog::info("#     | ID     | Unknown1 | Unknown 2");
+                for (int i = 0; i < m_weaponHandles.size(); i++)
+                {
+                    spdlog::info("{:04d}    {:04X}     {:08X}   {:08X}", i, m_weaponHandles[i].entityId, m_weaponHandles[i].m_field4, m_weaponHandles[i].m_field8);
+                }
+            }
+            else
+            {
+                spdlog::info("GMS::LoadWeaponHandles| No weapon handles declared there. Probably, you work with LoaderSequence.GMS");
             }
         }
     }
@@ -174,7 +204,9 @@ namespace ReGlacier
         auto BUFBuffer = reinterpret_cast<char*>(buf.get());
 
         LoadImportTable(buffer);
+        LoadProperties(buffer);
         LoadExcludedAnimations(buffer, BUFBuffer);
+        LoadWeaponHandles(buffer, BUFBuffer);
     }
 
     void GMS::LoadImportTable(const char* buffer)
@@ -188,7 +220,8 @@ namespace ReGlacier
 
         m_linkRefs.reserve(m_totalLinkRefsCount);
 
-        while (true)
+        //while (true)
+        do
         {
             //TODO: Think how to wrap that into the structure
             entityLocator = *(int*)(&buffer[8 * entityIndex + 4] + *(int*)buffer) & 0xFFFFFF;
@@ -198,13 +231,37 @@ namespace ReGlacier
             //int ptr = (int)&buffer[4 * entityLocator];
             m_linkRefs.emplace_back(entityIndex, entityType, db.HasDefinitionForEntityTypeId(entityType));
 
-            if (++entityIndex == m_totalLinkRefsCount)
-            {
-                return;
-            }
-        }
+            ++entityIndex;
+        } while (entityIndex != m_totalLinkRefsCount);
 
         //result = &prmBuffer[*((int*)v7 + 3)];
+    }
+
+    void GMS::LoadProperties(const char* buffer)
+    {
+//        /// ------------ Load new --------------
+//        int32_t dataOffset = *((int32_t*)buffer + 4);
+//        int32_t totalEntities = *(int32_t*)&buffer[dataOffset];
+//        auto nrGeoms = (int32_t*)&buffer[dataOffset + 4];
+//
+//        auto pGeomRefs = reinterpret_cast<GMSGeomReference*>(nrGeoms);
+//
+//        // re-ida
+//        {
+//            int v106 = *((int*)buffer + 0x7);
+//            int v20 = v106 + 0x57'800;
+//            v20 = std::min(v20, 0x40000);
+//            if (m_assets->GMS.find("m10_main") != std::string::npos)
+//                v20 = v106 + 0x70800;
+//            else if (m_assets->GMS.find("m_09_main") != std::string::npos)
+//                v20 = v106 + 0x53000;
+//        }
+//
+//        {
+//            int v5 = 4 * *((int*)buffer + 0xF) + 1;
+//        }
+//
+//        spdlog::info("---------");
     }
 
     std::vector<std::string_view> ParseIOISmartString(const char* string, int awaitEntitiesCount)
@@ -229,7 +286,7 @@ namespace ReGlacier
 
     void GMS::LoadExcludedAnimations(char* gmsBuffer, char* bufBuffer)
     {
-        auto excludedAnimationsOffset = ((int*)gmsBuffer)[0x11];
+        auto excludedAnimationsOffset = ((int*)gmsBuffer)[GMSOffsets::ExcludedAnimationsRegionAddr];
         auto totalExcludedAnimations  = ((int*)bufBuffer)[excludedAnimationsOffset / sizeof(int)];
         auto excludedAnimationsBuffer = (char*)&((char*)bufBuffer)[excludedAnimationsOffset + 4];
         auto parsedAnimationsList = ParseIOISmartString(excludedAnimationsBuffer, totalExcludedAnimations);
@@ -239,6 +296,37 @@ namespace ReGlacier
         for (auto&& animName : parsedAnimationsList)
         {
             m_excludedAnimationsList.emplace_back(animName.data(), animName.length());
+        }
+    }
+
+    void GMS::LoadWeaponHandles(char* gmsBuffer, char* bufBuffer)
+    {
+        auto weaponHandlesOffset = ((int*)gmsBuffer)[GMSOffsets::WeaponHandlesRegionAddr];
+        if (!weaponHandlesOffset)
+        {
+            // Note: I don't know how to check it more correctly but if weaponHandlesOffset == 0 we will have bad pointer
+            return;
+        }
+
+        auto weaponHandlesCountPtr = (int*)&((int*)bufBuffer)[weaponHandlesOffset / sizeof(int)];
+
+        m_weaponHandlesCount = *weaponHandlesCountPtr;
+
+        auto weaponHandlesLocation = reinterpret_cast<char*>(weaponHandlesCountPtr + 1);
+
+        if (!m_weaponHandlesCount)
+        {
+            return;
+        }
+
+        m_weaponHandles.reserve(m_weaponHandlesCount);
+
+        auto handles = std::make_unique<GMSWeaponHandle[]>(m_weaponHandlesCount);
+        std::memcpy(handles.get(), weaponHandlesLocation, sizeof(GMSWeaponHandle) * m_weaponHandlesCount);
+
+        for (int i = 0; i < m_weaponHandlesCount; i++)
+        {
+            m_weaponHandles.emplace_back(handles[i].entityId, handles[i].m_field4, handles[i].m_field8);
         }
     }
 

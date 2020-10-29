@@ -5,30 +5,12 @@
 #include <vector>
 #include <memory>
 
-#include <GlacierTypeDefs.h>
+#include <GMSTypes.h>
 
 namespace ReGlacier
 {
     class LevelContainer;
     struct LevelAssets;
-
-    struct GMSLinkRef
-    {
-        uint32_t index = 0u;
-
-        struct {
-            uint32_t index = 0;
-            Glacier::TypeId id = Glacier::NOT_INITIALISED;
-        } typeInfo;
-
-        GMSLinkRef() = default;
-        GMSLinkRef(uint32_t _index, uint32_t _typeId, bool isDeclared)
-            : index(_index)
-        {
-            typeInfo.index = _typeId;
-            typeInfo.id = isDeclared ? static_cast<Glacier::TypeId>(_typeId) : Glacier::NOT_FOUND;
-        }
-    };
 
     class GMS
     {
@@ -41,6 +23,9 @@ namespace ReGlacier
 
         int32_t m_totalLinkRefsCount = 0;
         std::vector<GMSLinkRef>  m_linkRefs;
+
+        int32_t m_weaponHandlesCount = 0;
+        std::vector<GMSWeaponHandle> m_weaponHandles;
     public:
         using Ptr = std::unique_ptr<GMS>;
 
@@ -55,7 +40,9 @@ namespace ReGlacier
     private:
         void LoadEntities(std::unique_ptr<char[]>&& buffer);
         void LoadImportTable(const char* gmsBuffer);
+        void LoadProperties(const char* gmsBuffer);
         void LoadExcludedAnimations(char* gmsBuffer, char* bufBuffer);
+        void LoadWeaponHandles(char* gmsBuffer, char* bufBuffer);
 
         std::unique_ptr<char[]> GetRawGMS(int& bufferSize);
     };
