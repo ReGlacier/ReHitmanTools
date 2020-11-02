@@ -57,6 +57,12 @@ namespace ReGlacier
                 }
 
                 bufferSize = readBytes;
+
+                if (fileInfo.uncompressed_size != bufferSize)
+                {
+                    spdlog::warn("LevelContainer::Read| File read operation got wrong buffer size. Await {} got {}", fileInfo.uncompressed_size, bufferSize);
+                }
+
                 return std::move(buffer);
             }
 

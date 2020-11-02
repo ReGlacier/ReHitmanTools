@@ -1,7 +1,12 @@
 #include <LevelDescription.h>
 #include <LevelContainer.h>
 #include <LevelAssets.h>
-#include <GMS.h>
+
+#include <GameEntityFactory.h>
+
+#include <GMS/GMS.h>
+#include <PRM/PRM.h>
+#include <TEX/TEX.h>
 
 #include <spdlog/spdlog.h>
 
@@ -18,7 +23,10 @@ namespace ReGlacier
         std::string ArchivePath;
         LevelAssets Assets;
         LevelContainer::Ptr Container;
+
         GMS::Ptr GMSInstance;
+        PRM::Ptr PRMInstance;
+        TEX::Ptr TEXInstance;
 
         unzFile Zip { nullptr };
 
@@ -70,7 +78,7 @@ namespace ReGlacier
         return ValidateLevelArchive();
     }
 
-    void LevelDescription::AnalyzeGMS()
+    void LevelDescription::Analyze()
     {
         if (!m_context)
         {
@@ -79,8 +87,24 @@ namespace ReGlacier
         }
 
         m_context->Container = std::make_unique<LevelContainer>(m_context->Zip);
-        m_context->GMSInstance = std::make_unique<GMS>(m_context->Assets.GMS, m_context->Container.get(), &m_context->Assets);
-        m_context->GMSInstance->Load();
+
+        m_context->TEXInstance = GameEntityFactory::Create<TEX>(m_context->Assets.TEX, m_context);
+        if (!m_context->TEXInstance->Load())
+        {
+            spdlog::error("LevelDescription::Analyze| Failed to load TEX to analyze!");
+        }
+
+        m_context->PRMInstance = GameEntityFactory::Create<PRM>(m_context->Assets.PRM, m_context);
+        if (!m_context->PRMInstance->Load())
+        {
+            spdlog::error("LevelDescription::Analyze| Failed to load PRM to analyze!");
+        }
+
+        m_context->GMSInstance = GameEntityFactory::Create<GMS>(m_context->Assets.GMS, m_context);
+        if (!m_context->GMSInstance->Load())
+        {
+            spdlog::error("LevelDescription::Analyze| Failed to load GMS to analyze!");
+        }
     }
 
     void LevelDescription::PrintInfo()

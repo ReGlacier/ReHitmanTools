@@ -15,7 +15,7 @@ namespace ReGlacier
 
         bool Open();
         [[nodiscard]] bool IsMain() const;
-        void AnalyzeGMS();
+        void Analyze();
         void PrintInfo();
         void ExportUncompressedGMS(const std::string& path);
     private:

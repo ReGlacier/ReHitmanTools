@@ -44,7 +44,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    level->AnalyzeGMS();
+    level->Analyze();
 
     if (printLevelInfo)
         level->PrintInfo();

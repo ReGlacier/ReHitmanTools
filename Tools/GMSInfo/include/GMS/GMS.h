@@ -5,20 +5,16 @@
 #include <vector>
 #include <memory>
 
-#include <GMSTypes.h>
+#include <GMS/GMSTypes.h>
+#include <IGameEntity.h>
 
 namespace ReGlacier
 {
     class LevelContainer;
     struct LevelAssets;
 
-    class GMS
+    class GMS : public IGameEntity
     {
-        bool m_isLoaded { false };
-        std::string m_name;
-        LevelContainer* m_container;
-        LevelAssets* m_assets;
-
         std::vector<std::string> m_excludedAnimationsList;
 
         int32_t m_totalLinkRefsCount = 0;
@@ -31,19 +27,19 @@ namespace ReGlacier
 
         GMS(std::string  name, LevelContainer* levelContainer, LevelAssets* levelAssets);
 
-        void Load();
+        bool Load() override;
         bool SaveUncompressed(const std::string& filePath);
         void PrintInfo();
 
         [[nodiscard]] const std::vector<std::string>& GetExcludedAnimations() const;
         [[nodiscard]] const std::vector<GMSLinkRef>& GetLinkReferences() const;
     private:
-        void LoadEntities(std::unique_ptr<char[]>&& buffer);
-        void LoadImportTable(const char* gmsBuffer);
-        void LoadProperties(const char* gmsBuffer);
-        void LoadExcludedAnimations(char* gmsBuffer, char* bufBuffer);
-        void LoadWeaponHandles(char* gmsBuffer, char* bufBuffer);
+        bool LoadEntities(std::unique_ptr<char[]>&& buffer, size_t bufferSize);
+        bool LoadImportTable(const char* gmsBuffer, size_t bufferSize);
+        bool LoadProperties(const char* gmsBuffer, size_t bufferSize);
+        bool LoadExcludedAnimations(char* gmsBuffer, size_t gmsBufferSize, char* bufBuffer, size_t bufBufferSize);
+        bool LoadWeaponHandles(char* gmsBuffer, size_t gmsBufferSize, char* bufBuffer, size_t bufBufferSize);
 
-        std::unique_ptr<char[]> GetRawGMS(int& bufferSize);
+        std::unique_ptr<char[]> GetRawGMS(size_t& bufferSize);
     };
 }
