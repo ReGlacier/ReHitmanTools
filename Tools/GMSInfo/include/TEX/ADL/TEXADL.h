@@ -56,7 +56,7 @@ namespace ReGlacier
             entry.Width = binaryWalker.Read<int16_t>();
             entry.MipMapLevels = binaryWalker.Read<int32_t>();
             entry.Unknown1 = binaryWalker.Read<int32_t>();
-            entry.Unknown2 = binaryWalker.Read<int32_t>();
+            entry.Unknown2 = binaryWalker.Read<float>();
             entry.Unknown3 = binaryWalker.Read<int32_t>();
             BinaryWalkerADL<std::string>::Read(binaryWalker, entry.FileName);
         }
@@ -71,9 +71,28 @@ namespace ReGlacier
             binaryWalker.Write<int16_t>(entry.Width);
             binaryWalker.Write<int32_t>(entry.MipMapLevels);
             binaryWalker.Write<int32_t>(entry.Unknown1);
-            binaryWalker.Write<int32_t>(entry.Unknown2);
+            binaryWalker.Write<float>(entry.Unknown2);
             binaryWalker.Write<int32_t>(entry.Unknown3);
             BinaryWalkerADL<std::string>::Write(binaryWalker, entry.FileName);
+        }
+    };
+
+    template <>
+    struct BinaryWalkerADL<STEXEntityAllocationInfo>
+    {
+        static void Read(const BinaryWalker& binaryWalker, STEXEntityAllocationInfo& entry)
+        {
+            entry.MipMapLevelsSize = binaryWalker.Read<int32_t>();
+            entry.DataOffsets = binaryWalker.GetPosition();
+            entry.Data = std::make_unique<char[]>(entry.MipMapLevelsSize);
+            binaryWalker.ReadArray<char>(entry.Data.get(), entry.MipMapLevelsSize);
+        }
+
+        static void Write(BinaryWalker& binaryWalker, const STEXEntityAllocationInfo& entry)
+        {
+            binaryWalker.Write<int32_t>(entry.MipMapLevelsSize);
+            binaryWalker.Write<int32_t>(entry.DataOffsets);
+            binaryWalker.WriteArray<char>(entry.Data.get(), entry.MipMapLevelsSize);
         }
     };
 }

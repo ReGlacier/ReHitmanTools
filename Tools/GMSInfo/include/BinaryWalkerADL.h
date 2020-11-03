@@ -20,22 +20,17 @@ namespace ReGlacier
 
         static void Read(const BinaryWalker& binaryWalker, std::string& value)
         {
-            char ch = binaryWalker.Read<char>();
+            char ch;
 
-            while (ch != kEOS)
+            while ((ch = binaryWalker.Read<char>()) != 0x0)
             {
                 value.push_back(ch);
-                ch = binaryWalker.Read<char>();
             }
         }
 
         static void Write(BinaryWalker& binaryWalker, const std::string& value)
         {
-            for (const auto& ch : value)
-            {
-                binaryWalker.Write<char>(ch);
-            }
-            binaryWalker.Write<char>(kEOS);
+            binaryWalker.WriteArray<char>(value.data(), value.length());
         }
     };
 }

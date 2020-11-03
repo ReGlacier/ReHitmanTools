@@ -94,6 +94,17 @@ namespace ReGlacier
             }
         }
 
+        template <typename T>
+        void ReadArray(T* buffer, size_t size) const
+        {
+            if (!m_buffer || m_offset + sizeof(T) * size >= m_size)
+                throw std::out_of_range { "Unable to read buffer. Not enough bytes" };
+
+            std::memcpy(buffer, m_buffer.get() + (sizeof(T) * size), size);
+
+            m_offset += (sizeof(T) * size);
+        }
+
         /**
          * Read multiple values of given type into non managed container (C array)
          * @tparam T entity type
@@ -128,6 +139,17 @@ namespace ReGlacier
             }
         }
 
+        template <typename T>
+        void WriteArray(const T* buffer, size_t size)
+        {
+            if (!m_buffer || m_offset + sizeof(T) * size >= m_size)
+                throw std::out_of_range { "Unable to read buffer. Not enough bytes" };
+
+            std::memcpy(m_buffer.get(), buffer + (sizeof(T) * size), size);
+
+            m_offset += (sizeof(T) * size);
+        }
+
         /**
          * Move internal offset to passed value with passed rule
          * @param offset - new offset
@@ -139,5 +161,11 @@ namespace ReGlacier
          * Move out holded pointer and reset internal state
          */
         std::unique_ptr<uint8_t[]>&& Take();
+
+        void Align(size_t align, char padByte);
+
+        size_t GetPosition() const;
+
+        std::intptr_t At() const;
     };
 }

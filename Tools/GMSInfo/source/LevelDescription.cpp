@@ -7,6 +7,7 @@
 #include <GMS/GMS.h>
 #include <PRM/PRM.h>
 #include <TEX/TEX.h>
+#include <SND/SND.h>
 
 #include <spdlog/spdlog.h>
 
@@ -27,6 +28,7 @@ namespace ReGlacier
         GMS::Ptr GMSInstance;
         PRM::Ptr PRMInstance;
         TEX::Ptr TEXInstance;
+        SND::Ptr SNDInstance;
 
         unzFile Zip { nullptr };
 
@@ -87,6 +89,12 @@ namespace ReGlacier
         }
 
         m_context->Container = std::make_unique<LevelContainer>(m_context->Zip);
+
+        m_context->SNDInstance = GameEntityFactory::Create<SND>(m_context->Assets.SND, m_context);
+        if (!m_context->SNDInstance->Load())
+        {
+            spdlog::error("LevelDescription::Analyze| Failed to load SND to analyze!");
+        }
 
         m_context->TEXInstance = GameEntityFactory::Create<TEX>(m_context->Assets.TEX, m_context);
         if (!m_context->TEXInstance->Load())

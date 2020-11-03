@@ -20,7 +20,8 @@ namespace ReGlacier
         BITMAP_U8V8        = 'U8V8',
         BITMAP_DXT1        = 'DXT1',
         BITMAP_DXT3        = 'DXT3',
-        BITMAP_I8          = '  I8'
+        BITMAP_I8          = '  I8',
+        BITMAP_UNKNOWN     = 'UNKN'
     };
 
     struct STEXEntry
@@ -33,8 +34,22 @@ namespace ReGlacier
         int16_t Width;
         int32_t MipMapLevels;
         int32_t Unknown1;
-        int32_t Unknown2;
+        float   Unknown2;
         int32_t Unknown3;
-        std::string FileName;
+        std::string FileName; ///NOTE: Sometimes this field would be empty. I don't know why but most tools ignore that and I'm too.
+    };
+
+    struct STEXEntityAllocationInfo
+    {
+        int32_t MipMapLevelsSize;
+        int32_t DataOffsets;
+        std::unique_ptr<char[]> Data;
+    };
+
+    struct SPALPaletteInfo
+    {
+        int32_t Size;
+        int32_t DataSize;
+        std::unique_ptr<char[]> Data;
     };
 }

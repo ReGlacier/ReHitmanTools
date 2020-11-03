@@ -28,4 +28,29 @@ namespace ReGlacier
         m_size   = 0;
         return std::move(m_buffer);
     }
+
+    void BinaryWalker::Align(size_t align, char padByte)
+    {
+        auto position = GetPosition();
+
+        if (position % align == 0)
+            return;
+
+        auto offset = align - position % align;
+
+        for (auto i = 0; i < offset; i++)
+        {
+            Write<char>(padByte);
+        }
+    }
+
+    size_t BinaryWalker::GetPosition() const
+    {
+        return m_offset;
+    }
+
+    std::intptr_t BinaryWalker::At() const
+    {
+        return (std::intptr_t)(m_buffer.get() + m_offset);
+    }
 }
