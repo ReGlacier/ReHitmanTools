@@ -16,9 +16,11 @@ int main(int argc, char** argv)
     argh::parser cli(argc, argv);
 
     bool printLevelInfo;
+
     std::string levelArchivePath;
     std::string typesDataBaseFilePath;
     std::string uncompressedGMSPath;
+    std::string exportLocalizationToFilePath;
 
     if (!(cli({"-L", "\"--level\""}) >> levelArchivePath))
     {
@@ -29,6 +31,7 @@ int main(int argc, char** argv)
     cli("--types", kDefaultTypeStorageFile) >> typesDataBaseFilePath;
     cli("--export-gms", "") >> uncompressedGMSPath;
     cli("--print-info", false) >> printLevelInfo;
+    cli("--export-loc", "") >> exportLocalizationToFilePath;
 
     if (!ReGlacier::TypesDataBase::GetInstance().Load(typesDataBaseFilePath))
     {
@@ -51,6 +54,17 @@ int main(int argc, char** argv)
 
     if (!uncompressedGMSPath.empty())
         level->ExportUncompressedGMS(uncompressedGMSPath);
+
+    if (!exportLocalizationToFilePath.empty())
+    {
+        if (level->ExportLocalizationToJson(exportLocalizationToFilePath))
+        {
+            spdlog::info("Localization exported to file {}", exportLocalizationToFilePath);
+        } else {
+            spdlog::error("Failed to export localization contents. More details in log.");
+        }
+    }
+
 
     return 0;
 }

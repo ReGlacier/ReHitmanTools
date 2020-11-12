@@ -40,6 +40,11 @@ namespace ReGlacier
         bool LoadExcludedAnimations(char* gmsBuffer, size_t gmsBufferSize, char* bufBuffer, size_t bufBufferSize);
         bool LoadWeaponHandles(char* gmsBuffer, size_t gmsBufferSize, char* bufBuffer, size_t bufBufferSize);
 
-        std::unique_ptr<char[]> GetRawGMS(size_t& bufferSize);
+        std::unique_ptr<uint8_t[]> GetRawGMS(size_t& bufferSize);
+
+    private:
+        int32_t m_totalEntities;
+
+        std::vector<SGMSBaseGeom> m_geoms;
     };
 }

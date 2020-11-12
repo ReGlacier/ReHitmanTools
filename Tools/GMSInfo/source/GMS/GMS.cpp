@@ -1,14 +1,20 @@
 #include <GMS/GMS.h>
-#include <LevelAssets.h>
+#include <GMS/GMSTypes.h>
+#include <GMS/ADL/GMSADL.h>
+
 #include <LevelContainer.h>
-#include <ZPackedDataChunk.h>
 #include <GlacierTypeDefs.h>
 #include <TypesDataBase.h>
+#include <LevelAssets.h>
+
+#include <BinaryWalker.h>
+#include <BinaryWalkerADL.h>
 
 #include <spdlog/spdlog.h>
 
 #include <utility>
 #include <fstream>
+#include <numeric>
 
 extern "C" {
 #include <zlib.h>
@@ -34,7 +40,7 @@ namespace Legacy
     };
 
     [[deprecated("This function is an old implementation of IOI decoder. Please, rewrite it to nice C++ api")]]
-    bool GMS_Decompress(GMS2* gms, char* gmsDecompressed, int gmsInLength) {
+    bool GMS_Decompress(GMS2* gms, uint8_t* gmsDecompressed, int gmsInLength) {
         if (gms->field_14 == 1) {
             const int length = (gms->field_C >= gmsInLength) ? gms->field_C : gmsInLength;
             memcpy(gmsDecompressed, (void*) (gms->m_raw + 9), length);
@@ -81,13 +87,49 @@ namespace ReGlacier
     {
         assert(!m_isLoaded);
 
-        size_t bufferSize = 0;
-        auto buffer = GetRawGMS(bufferSize);
+        size_t gmsBufferSize = 0;
+        auto gmsBuffer = GetRawGMS(gmsBufferSize);
 
-        LoadEntities(std::move(buffer), bufferSize);
+        if (!gmsBuffer)
+        {
+            spdlog::error("GMS::Load| Failed to load GMS {}", m_name);
+            return false;
+        }
+
+        size_t prmBufferSize = 0;
+        auto prmBuffer = m_container->Read(m_assets->PRM, prmBufferSize);
+        if (!prmBuffer)
+        {
+            spdlog::error("GMS::Load| Failed to load PRM {}", m_assets->PRM);
+            return false;
+        }
+
+        BinaryWalker gmsBinaryWalker(gmsBuffer.get(), gmsBufferSize);
+        BinaryWalker prmBinaryWalker(prmBuffer.get(), prmBufferSize);
+
+        SGMSUncompressedHeader header {};
+        BinaryWalkerADL<SGMSUncompressedHeader>::Read(gmsBinaryWalker, header);
+
+        gmsBinaryWalker.Seek(header.TotalEntitiesCountPos, BinaryWalker::SeekType::FROM_BEGIN);
+        m_totalEntities = gmsBinaryWalker.Read<int32_t>();
+        spdlog::info("GMS total entities: {}", m_totalEntities);
+
+        m_geoms.reserve(m_totalEntities);
+
+        for (int entryId = 0; entryId < m_totalEntities; ++entryId)
+        {
+            gmsBinaryWalker.Seek(header.TotalEntitiesCountPos + (8 * entryId), BinaryWalker::SeekType::FROM_BEGIN);
+            SGMSEntry entry {};
+            BinaryWalkerADL<SGMSEntry>::Read(gmsBinaryWalker, entry);
+
+            gmsBinaryWalker.Seek(4 * (entry.TypeInfoPos & 0xFFFFFF), BinaryWalker::SeekType::FROM_BEGIN); //& 0xFFFFFF IT'S VERY IMPORTANT!!!
+
+            auto& baseGeom = m_geoms.emplace_back();
+            BinaryWalkerADL<SGMSBaseGeom>::Read(gmsBinaryWalker, baseGeom);
+        }
 
         m_isLoaded = true;
-        return m_isLoaded;
+        return true;
     }
 
     bool GMS::SaveUncompressed(const std::string& filePath)
@@ -117,12 +159,6 @@ namespace ReGlacier
     }
 
     void GMS::PrintInfo() {
-        if (!m_isLoaded)
-        {
-            Load();
-        }
-        assert(m_isLoaded);
-
         {
             auto& db = TypesDataBase::GetInstance();
 
@@ -335,7 +371,7 @@ namespace ReGlacier
         return true;
     }
 
-    std::unique_ptr<char[]> GMS::GetRawGMS(size_t& outBufferSize)
+    std::unique_ptr<uint8_t[]> GMS::GetRawGMS(size_t& outBufferSize)
     {
         size_t bufferSize = 0;
         auto buffer = m_container->Read(m_name, bufferSize);
@@ -360,7 +396,7 @@ namespace ReGlacier
 
         outBufferSize = (v5 + 15) & 0xFFFFFFF0; ///GOT WRONG SIZE
 
-        auto outBuffer = std::make_unique<char[]>(outBufferSize);
+        auto outBuffer = std::make_unique<uint8_t[]>(outBufferSize);
         Legacy::GMS_Decompress(&gms, outBuffer.get(), outBufferSize);
 
         return std::move(outBuffer);

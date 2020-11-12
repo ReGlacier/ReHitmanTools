@@ -4,10 +4,12 @@
 
 #include <GameEntityFactory.h>
 
+#include <ANM/ANM.h>
 #include <GMS/GMS.h>
 #include <PRM/PRM.h>
 #include <TEX/TEX.h>
 #include <SND/SND.h>
+#include <LOC/LOC.h>
 
 #include <spdlog/spdlog.h>
 
@@ -25,10 +27,12 @@ namespace ReGlacier
         LevelAssets Assets;
         LevelContainer::Ptr Container;
 
+        ANM::Ptr ANMInstance;
         GMS::Ptr GMSInstance;
         PRM::Ptr PRMInstance;
         TEX::Ptr TEXInstance;
         SND::Ptr SNDInstance;
+        LOC::Ptr LOCInstance;
 
         unzFile Zip { nullptr };
 
@@ -90,6 +94,18 @@ namespace ReGlacier
 
         m_context->Container = std::make_unique<LevelContainer>(m_context->Zip);
 
+        m_context->LOCInstance = GameEntityFactory::Create<LOC>(m_context->Assets.LOC, m_context);
+        if (!m_context->LOCInstance->Load())
+        {
+            spdlog::error("LevelDescription::Analyze| Failed to load LOC to analyze!");
+        }
+
+        m_context->ANMInstance = GameEntityFactory::Create<ANM>(m_context->Assets.ANM, m_context);
+        if (!m_context->ANMInstance->Load())
+        {
+            spdlog::error("LevelDescription::Analyze| Failed to load ANM to analyze!");
+        }
+
         m_context->SNDInstance = GameEntityFactory::Create<SND>(m_context->Assets.SND, m_context);
         if (!m_context->SNDInstance->Load())
         {
@@ -140,6 +156,17 @@ namespace ReGlacier
         } else {
             spdlog::error("Failed to save raw GMS file to {}. Please, check the log", path);
         }
+    }
+
+    bool LevelDescription::ExportLocalizationToJson(std::string_view path)
+    {
+        if (!m_context || !m_context->LOCInstance)
+        {
+            spdlog::error("LevelDescription::ExportLocalizationToJson| Call Analyze() before!");
+            return false;
+        }
+
+        return m_context->LOCInstance->SaveAsJson(path);
     }
 
     bool LevelDescription::ValidateLevelArchive()

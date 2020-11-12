@@ -18,6 +18,7 @@ namespace ReGlacier
         void Analyze();
         void PrintInfo();
         void ExportUncompressedGMS(const std::string& path);
+        bool ExportLocalizationToJson(std::string_view path);
     private:
         bool ValidateLevelArchive();
     };

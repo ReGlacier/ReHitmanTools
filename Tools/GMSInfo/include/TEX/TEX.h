@@ -17,6 +17,8 @@ namespace ReGlacier
 
         bool Load() override;
 
+        const std::vector<Texture::Ptr>& GetLoadedTextures() const;
+
     private:
         std::vector<Texture::Ptr> m_textures;
     };

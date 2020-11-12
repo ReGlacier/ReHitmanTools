@@ -36,7 +36,7 @@ namespace ReGlacier
             return false;
         }
 
-        BinaryWalker binaryWalker(std::move(texBuffer), texBufferSize);
+        BinaryWalker binaryWalker(texBuffer.get(), texBufferSize);
 
         STEXHeader header {};
         BinaryWalkerADL<STEXHeader>::Read(binaryWalker, header);
@@ -91,28 +91,6 @@ namespace ReGlacier
             }
 
             m_textures.push_back(texture);
-
-            auto Type2Str = [](ETEXEntityType type) -> std::string_view {
-                switch (type)
-                {
-                    case BITMAP_PAL:      return "PALN";
-                    case BITMAP_PAL_OPAC: return "PAL_OPAC";
-                    case BITMAP_32:       return "RGBA";
-                    case BITMAP_U8V8:     return "U8V8";
-                    case BITMAP_DXT1:     return "DXT1";
-                    case BITMAP_DXT3:     return "DXT3";
-                    case BITMAP_I8:       return "I8";
-                    default:              return "Unknown";
-                }
-            };
-
-            spdlog::info(
-                    "TEX::Load| Load texture '{}', size {}x{}, type {} f: {}",
-                    texture->m_name,
-                    texture->m_width,
-                    texture->m_height,
-                    Type2Str(texture->m_gameTexType),
-                    texture->m_unknown2);
         }
 
         std::array<uint32_t, kOffsetsTableSize> offsetsTable2 {};
@@ -165,8 +143,11 @@ namespace ReGlacier
         }
 
         spdlog::info("TEX::Load| Total textures in memory: {}", m_textures.size());
-
-        texBuffer = std::move(binaryWalker.Take());
         return true;
+    }
+
+    const std::vector<Texture::Ptr> & TEX::GetLoadedTextures() const
+    {
+        return m_textures;
     }
 }
