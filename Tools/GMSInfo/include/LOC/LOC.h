@@ -1,7 +1,7 @@
 #pragma once
 
 #include <IGameEntity.h>
-#include <LOC/LOCTree.h>
+#include <BM/LOC/LOCTree.h>
 
 #include <string>
 #include <map>
@@ -21,12 +21,12 @@ namespace ReGlacier
         bool SaveAsJson(std::string_view filePath);
 
     private:
-        LOCTreeNode* m_root { nullptr };
+        BM::LOC::LOCTreeNode* m_root { nullptr };
         std::unique_ptr<uint8_t[]> m_currentBuffer { nullptr }; //< We are taking ownership of the LOC buffer. It's required until the tree not serialized into other structs.
         size_t m_currentBufferSize { 0 };
 
     private:
-        void VisitTreeNode(LOCTreeNode* treeNode);
+        //void VisitTreeNode(LOCTreeNode* treeNode);
 
         /**
          * @brief Search passed key in contents buffer

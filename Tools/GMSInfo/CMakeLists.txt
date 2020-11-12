@@ -10,7 +10,7 @@ endif()
 file(GLOB_RECURSE GMSTOOL_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(HBM_GMSTool ${GMSTOOL_SOURCES})
 
-target_link_libraries(HBM_GMSTool PRIVATE nlohmann_json zlibstatic argh minizip)
+target_link_libraries(HBM_GMSTool PRIVATE nlohmann_json zlibstatic argh minizip BMFormats::Localization)
 target_link_libraries(HBM_GMSTool PUBLIC spdlog)
 
 target_compile_definitions(HBM_GMSTool PRIVATE -D_CRT_SECURE_NO_WARNINGS=1)

@@ -14,6 +14,7 @@
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
+#include <array>
 
 extern "C" {
 #include <unzip.h>
@@ -21,6 +22,18 @@ extern "C" {
 
 namespace ReGlacier
 {
+    enum IgnoreFlags : int {
+        IgnoreGMS = 0,
+        IgnoreANM = 1,
+        IgnoreLOC = 2,
+        IgnorePRM = 3,
+        IgnorePRP = 4,
+        IgnoreTEX = 5,
+        IgnoreSND = 6
+    };
+
+    static constexpr size_t kTotalFlags = 7;
+
     struct LevelDescription::Context
     {
         std::string ArchivePath;
@@ -34,7 +47,20 @@ namespace ReGlacier
         SND::Ptr SNDInstance;
         LOC::Ptr LOCInstance;
 
+        std::array<bool, kTotalFlags> Flags {};
+
         unzFile Zip { nullptr };
+
+        Context()
+        {
+            Flags[IgnoreFlags::IgnoreGMS] = false;
+            Flags[IgnoreFlags::IgnoreANM] = false;
+            Flags[IgnoreFlags::IgnoreLOC] = false;
+            Flags[IgnoreFlags::IgnorePRM] = false;
+            Flags[IgnoreFlags::IgnorePRP] = false;
+            Flags[IgnoreFlags::IgnoreTEX] = false;
+            Flags[IgnoreFlags::IgnoreSND] = false;
+        }
 
         ~Context()
         {
@@ -84,51 +110,58 @@ namespace ReGlacier
         return ValidateLevelArchive();
     }
 
-    void LevelDescription::Analyze()
+    void LevelDescription::LoadAndAnalyze()
     {
         if (!m_context)
         {
-            spdlog::error("Unable to analyze level. Context not inited!");
+            spdlog::error("LevelDescription::LoadAndAnalyze| Unable to analyze level. Context not inited!");
             return;
         }
 
         m_context->Container = std::make_unique<LevelContainer>(m_context->Zip);
 
-        m_context->LOCInstance = GameEntityFactory::Create<LOC>(m_context->Assets.LOC, m_context);
-        if (!m_context->LOCInstance->Load())
-        {
-            spdlog::error("LevelDescription::Analyze| Failed to load LOC to analyze!");
-        }
+        if (!m_context->Flags[IgnoreFlags::IgnoreLOC]) {
+            m_context->LOCInstance = GameEntityFactory::Create<LOC>(m_context->Assets.LOC, m_context);
+            if (!m_context->LOCInstance->Load())
+            {
+                spdlog::error("LevelDescription::Analyze| Failed to load LOC to analyze!");
+            }
+        } else spdlog::info(" * LOC ignored by user");
 
-        m_context->ANMInstance = GameEntityFactory::Create<ANM>(m_context->Assets.ANM, m_context);
-        if (!m_context->ANMInstance->Load())
-        {
-            spdlog::error("LevelDescription::Analyze| Failed to load ANM to analyze!");
-        }
+        if (!m_context->Flags[IgnoreFlags::IgnoreANM]) {
+            m_context->ANMInstance = GameEntityFactory::Create<ANM>(m_context->Assets.ANM, m_context);
+            if (!m_context->ANMInstance->Load()) {
+                spdlog::error("LevelDescription::Analyze| Failed to load ANM to analyze!");
+            }
+        } else spdlog::info(" * ANM ignored by user");
 
-        m_context->SNDInstance = GameEntityFactory::Create<SND>(m_context->Assets.SND, m_context);
-        if (!m_context->SNDInstance->Load())
-        {
-            spdlog::error("LevelDescription::Analyze| Failed to load SND to analyze!");
-        }
+        if (!m_context->Flags[IgnoreFlags::IgnoreSND]) {
+            m_context->SNDInstance = GameEntityFactory::Create<SND>(m_context->Assets.SND, m_context);
+            if (!m_context->SNDInstance->Load()) {
+                spdlog::error("LevelDescription::Analyze| Failed to load SND to analyze!");
+            }
+        } else spdlog::info(" * SND ignored by user");
 
-        m_context->TEXInstance = GameEntityFactory::Create<TEX>(m_context->Assets.TEX, m_context);
-        if (!m_context->TEXInstance->Load())
-        {
-            spdlog::error("LevelDescription::Analyze| Failed to load TEX to analyze!");
-        }
+        if (!m_context->Flags[IgnoreFlags::IgnoreTEX]) {
+            m_context->TEXInstance = GameEntityFactory::Create<TEX>(m_context->Assets.TEX, m_context);
+            if (!m_context->TEXInstance->Load()) {
+                spdlog::error("LevelDescription::Analyze| Failed to load TEX to analyze!");
+            }
+        } else spdlog::info(" * TEX ignored by user");
 
-        m_context->PRMInstance = GameEntityFactory::Create<PRM>(m_context->Assets.PRM, m_context);
-        if (!m_context->PRMInstance->Load())
-        {
-            spdlog::error("LevelDescription::Analyze| Failed to load PRM to analyze!");
-        }
+        if (!m_context->Flags[IgnoreFlags::IgnorePRM]) {
+            m_context->PRMInstance = GameEntityFactory::Create<PRM>(m_context->Assets.PRM, m_context);
+            if (!m_context->PRMInstance->Load()) {
+                spdlog::error("LevelDescription::Analyze| Failed to load PRM to analyze!");
+            }
+        } else spdlog::info(" * PRM ignored by user");
 
-        m_context->GMSInstance = GameEntityFactory::Create<GMS>(m_context->Assets.GMS, m_context);
-        if (!m_context->GMSInstance->Load())
-        {
-            spdlog::error("LevelDescription::Analyze| Failed to load GMS to analyze!");
-        }
+        if (!m_context->Flags[IgnoreFlags::IgnoreGMS]) {
+            m_context->GMSInstance = GameEntityFactory::Create<GMS>(m_context->Assets.GMS, m_context);
+            if (!m_context->GMSInstance->Load()) {
+                spdlog::error("LevelDescription::Analyze| Failed to load GMS to analyze!");
+            }
+        } else spdlog::info(" * GMS ignored by user");
     }
 
     void LevelDescription::PrintInfo()
@@ -144,11 +177,13 @@ namespace ReGlacier
 
     void LevelDescription::ExportUncompressedGMS(const std::string& path)
     {
-        if (!m_context || !m_context->GMSInstance)
+        if (!m_context)
         {
-            spdlog::error("LevelDescription::ExportUncompressedGMS| Call AnalyzeGMS() before!");
+            spdlog::error("LevelDescription::ExportUncompressedGMS| No available context. Fatal error.");
             return;
         }
+
+        if (m_context->Flags[IgnoreFlags::IgnoreGMS]) return;
 
         if (m_context->GMSInstance->SaveUncompressed(path))
         {
@@ -160,14 +195,34 @@ namespace ReGlacier
 
     bool LevelDescription::ExportLocalizationToJson(std::string_view path)
     {
-        if (!m_context || !m_context->LOCInstance)
+        if (!m_context)
         {
-            spdlog::error("LevelDescription::ExportLocalizationToJson| Call Analyze() before!");
+            spdlog::error("LevelDescription::ExportLocalizationToJson| No available context. Fatal error.");
+            return false;
+        }
+
+        if (m_context->Flags[IgnoreFlags::IgnoreLOC])
+        {
+            spdlog::warn("LevelDescription::ExportLocalizationToJson| Unable to export LOC file because it's ignored by user");
+            return false;
+        }
+
+        if (!m_context->LOCInstance)
+        {
+            spdlog::error("LevelDescription::ExportLocalizationToJson| Call LoadAndAnalyze() before!");
             return false;
         }
 
         return m_context->LOCInstance->SaveAsJson(path);
     }
+
+    void LevelDescription::SetIgnoreGMSFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreGMS] = flag; }
+    void LevelDescription::SetIgnoreANMFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreANM] = flag; }
+    void LevelDescription::SetIgnoreLOCFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreLOC] = flag; }
+    void LevelDescription::SetIgnorePRMFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnorePRM] = flag; }
+    void LevelDescription::SetIgnorePRPFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnorePRP] = flag; }
+    void LevelDescription::SetIgnoreTEXFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreTEX] = flag; }
+    void LevelDescription::SetIgnoreSNDFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreSND] = flag; }
 
     bool LevelDescription::ValidateLevelArchive()
     {

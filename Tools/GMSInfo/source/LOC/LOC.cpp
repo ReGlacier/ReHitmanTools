@@ -1,5 +1,5 @@
 #include <LOC/LOC.h>
-#include <LOC/ADL/LOCJson.h>
+#include <BM/LOC/LOCJson.h>
 
 #include <LevelAssets.h>
 #include <LevelContainer.h>
@@ -46,8 +46,7 @@ namespace ReGlacier
 
         auto buffer = (char*)locBuffer.get();
 
-        m_root = new LOCTreeNode { nullptr, buffer };
-        VisitTreeNode(m_root);
+        m_root = BM::LOC::LOCTreeNode::ReadFromMemory(buffer, locBufferSize);
 
         m_currentBufferSize = locBufferSize;
         m_currentBuffer = std::move(locBuffer);
@@ -63,7 +62,7 @@ namespace ReGlacier
             return false;
         }
 
-        std::fstream file { filePath.data(), std::ios::app };
+        std::fstream file { filePath.data(), std::ios::out | std::ios::trunc };
         if (!file)
         {
             spdlog::error("LOC::SaveAsJson| Failed to create file {}", filePath);
@@ -71,65 +70,26 @@ namespace ReGlacier
         }
 
         nlohmann::json j;
-        nlohmann::adl_serializer<ReGlacier::LOCTreeNode>::to_json(j, *m_root);
+        nlohmann::adl_serializer<BM::LOC::LOCTreeNode>::to_json(j, *m_root);
 
-        std::string jsonContents = j.dump(4);
-        file.write(jsonContents.data(), jsonContents.size());
-        file.close();
+        try {
+            std::string jsonContents = j.dump(4);
+            file.write(jsonContents.data(), jsonContents.size());
+            file.close();
+        } catch (const nlohmann::json::exception&)
+        {
+            spdlog::error("Decoder error! Wrong LOC input format or error in LOC-Tree.");
+            file.close();
+            return false;
+        }
+        catch (const std::exception& runtimeError)
+        {
+            spdlog::error("C++ Runtime error! Message: {}", runtimeError.what());
+            file.close();
+            return false;
+        }
 
         return true;
-    }
-
-    void LOC::VisitTreeNode(LOCTreeNode* treeNode)
-    {
-        if (treeNode->parent)
-        {
-            treeNode->nodeType = static_cast<TreeNodeType>(treeNode->currentBufferPtr[0]);
-            treeNode->currentBufferPtr = (char*)&treeNode->currentBufferPtr[1]; // Move caret if we not a root
-        } else {
-            treeNode->nodeType = TreeNodeType::NODE_WITH_CHILDREN; // Root always contains children nodes, no data inside
-        }
-
-        const bool isOkNode = treeNode->nodeType == TreeNodeType::NODE_WITH_CHILDREN || treeNode->nodeType == TreeNodeType::VALUE_OR_DATA;
-        if (!isOkNode)
-        {
-            treeNode->nodeType = TreeNodeType::VALUE_OR_DATA; // FIXME: find a way to prepare this case more correctly than now
-        }
-
-        if (treeNode->nodeType == TreeNodeType::VALUE_OR_DATA)
-        {
-            treeNode->value = treeNode->currentBufferPtr;
-            //TODO: Determine the length of data
-            return; // Do not look for any child here
-        }
-
-        auto countOfChildNodes = static_cast<int8_t>(*treeNode->currentBufferPtr);
-        if (countOfChildNodes <= 0)
-            return; // Orphaned or broken node, not interested for us
-
-        char* offsetsPtr = (char*)&treeNode->currentBufferPtr[1];
-        std::vector<uint32_t> offsets;
-        offsets.reserve(countOfChildNodes);
-
-        offsets.push_back(0); // Always our first entity located at +0x0, other located on their own offsets
-        for (int i = 1; i < countOfChildNodes; i++)
-        {
-            offsets.push_back(*reinterpret_cast<uint32_t*>(&offsetsPtr[0]));
-            offsetsPtr += sizeof(uint32_t);
-        }
-
-        treeNode->numChild = static_cast<uint8_t>(countOfChildNodes);
-
-        char* baseAddr = treeNode->currentBufferPtr + (sizeof(uint32_t) * (countOfChildNodes - 1)) + 1;
-
-        for (const auto& offset : offsets)
-        {
-            std::string_view name { baseAddr + offset };
-            auto child = new LOCTreeNode(treeNode, baseAddr + offset + name.length() + 1);
-            child->name = name;
-            treeNode->AddChild(child);
-            LOC::VisitTreeNode(child);
-        }
     }
 
     bool LOC::HasTextResource(char* key, char* buffer)

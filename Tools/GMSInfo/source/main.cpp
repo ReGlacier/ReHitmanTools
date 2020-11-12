@@ -16,6 +16,13 @@ int main(int argc, char** argv)
     argh::parser cli(argc, argv);
 
     bool printLevelInfo;
+    bool ignoreGMS { false };
+    bool ignoreANM { false };
+    bool ignoreLOC { false };
+    bool ignorePRM { false };
+    bool ignorePRP { false };
+    bool ignoreTEX { false };
+    bool ignoreSND { false };
 
     std::string levelArchivePath;
     std::string typesDataBaseFilePath;
@@ -33,6 +40,15 @@ int main(int argc, char** argv)
     cli("--print-info", false) >> printLevelInfo;
     cli("--export-loc", "") >> exportLocalizationToFilePath;
 
+    // 'Ignore' flags
+    cli("--ignore-gms", false) >> ignoreGMS;
+    cli("--ignore-anm", false) >> ignoreANM;
+    cli("--ignore-loc", false) >> ignoreLOC;
+    cli("--ignore-prm", false) >> ignorePRM;
+    cli("--ignore-prp", false) >> ignorePRP;
+    cli("--ignore-tex", false) >> ignoreTEX;
+    cli("--ignore-snd", false) >> ignoreSND;
+
     if (!ReGlacier::TypesDataBase::GetInstance().Load(typesDataBaseFilePath))
     {
         spdlog::error("Failed to load types database from file {}", typesDataBaseFilePath);
@@ -47,7 +63,19 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    level->Analyze();
+    {
+        // Setup ignore flags
+        level->SetIgnoreGMSFlag(ignoreGMS);
+        level->SetIgnoreANMFlag(ignoreANM);
+        level->SetIgnoreLOCFlag(ignoreLOC);
+        level->SetIgnorePRMFlag(ignorePRM);
+        level->SetIgnorePRPFlag(ignorePRP);
+        level->SetIgnoreTEXFlag(ignoreTEX);
+        level->SetIgnoreSNDFlag(ignoreSND);
+    }
+
+
+    level->LoadAndAnalyze();
 
     if (printLevelInfo)
         level->PrintInfo();
@@ -57,11 +85,18 @@ int main(int argc, char** argv)
 
     if (!exportLocalizationToFilePath.empty())
     {
-        if (level->ExportLocalizationToJson(exportLocalizationToFilePath))
+        if (ignoreLOC)
         {
-            spdlog::info("Localization exported to file {}", exportLocalizationToFilePath);
-        } else {
-            spdlog::error("Failed to export localization contents. More details in log.");
+            spdlog::warn("--export-loc option was ignored because LOC file was excluded from analysis by user");
+        }
+        else
+        {
+            if (level->ExportLocalizationToJson(exportLocalizationToFilePath))
+            {
+                spdlog::info("Localization exported to file {}", exportLocalizationToFilePath);
+            } else {
+                spdlog::error("Failed to export localization contents. More details in log.");
+            }
         }
     }
 

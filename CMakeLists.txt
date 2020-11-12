@@ -26,6 +26,8 @@ add_subdirectory(Modules/zlib)
 add_subdirectory(Modules/spdlog)
 add_subdirectory(Modules/minizip)
 add_subdirectory(Modules/nlohmann)
+add_subdirectory(Modules/BMLOC)
 
 # Our projects
 add_subdirectory(Tools/GMSInfo)
+add_subdirectory(Tools/LOCC)
