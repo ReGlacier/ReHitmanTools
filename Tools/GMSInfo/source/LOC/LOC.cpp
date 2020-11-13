@@ -70,7 +70,7 @@ namespace ReGlacier
         }
 
         nlohmann::json j;
-        nlohmann::adl_serializer<BM::LOC::LOCTreeNode>::to_json(j, *m_root);
+        nlohmann::adl_serializer<BM::LOC::LOCTreeNode>::to_json(j, m_root);
 
         try {
             std::string jsonContents = j.dump(4);

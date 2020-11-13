@@ -14,5 +14,6 @@ namespace BM::LOC
         using Buffer = std::vector<uint8_t>;
 
         static bool Compile(Buffer& buffer, LOCTreeNode* rootNode);
+        static void MarkupTree(LOCTreeNode* rootNode);
     };
 }

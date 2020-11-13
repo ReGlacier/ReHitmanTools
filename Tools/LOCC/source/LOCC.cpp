@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         auto root = new BM::LOC::LOCTreeNode(nullptr, nullptr); // No parent, no buffer
         try
         {
-            nlohmann::adl_serializer<BM::LOC::LOCTreeNode>::from_json(localizationInJson, *root);
+            nlohmann::adl_serializer<BM::LOC::LOCTreeNode>::from_json(localizationInJson, root);
         }
         catch (const nlohmann::json::exception& badJson)
         {
@@ -178,6 +178,9 @@ int main(int argc, char** argv)
             spdlog::error("LOCC::Error: Failed to compile tree. Reason: {}", compileError.what());
             returnCode = CompilerRetCodes::FailedToCompileTree;
         }
+
+        delete root;
+        root = nullptr;
 
         outFile.close();
 

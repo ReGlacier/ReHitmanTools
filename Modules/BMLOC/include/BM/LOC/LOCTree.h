@@ -17,11 +17,11 @@ namespace BM::LOC
         // Editor defs
         struct MemoryMarkup
         {
-            uint32_t Offset { 0 };
+            uint32_t StartsAt {0 };
             uint32_t EndsAt { 0 };
 
             MemoryMarkup() = default;
-            MemoryMarkup(uint32_t o, uint32_t e) : Offset(o), EndsAt(e) {}
+            MemoryMarkup(uint32_t o, uint32_t e) : StartsAt(o), EndsAt(e) {}
         };
 
         // Defs
@@ -40,7 +40,7 @@ namespace BM::LOC
 
         // Tree data
         size_t numChild {0};
-        std::vector<LOCTreeNode*> children;
+        std::vector<LOCTreeNode*> children {};
 
         // Methods
         LOCTreeNode(LOCTreeNode* p, char* b);

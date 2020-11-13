@@ -36,6 +36,7 @@ namespace BM::LOC
         }
 
         children.push_back(node);
+        numChild = children.size();
     }
 
     void LOCTreeNode::RemoveChild(LOCTreeNode* node)
@@ -52,6 +53,7 @@ namespace BM::LOC
         if (it != std::end(children))
         {
             children.erase(it);
+            numChild = children.size();
         }
     }
 
