@@ -12,6 +12,12 @@
 
 #include <cstdint>
 
+class ResourceCollection
+{
+public:
+    static char* Lookup(char* key, char* buffer);
+};
+
 using namespace BM::LOC;
 
 class LOC_Compiler_Common : public ::testing::Test
@@ -99,6 +105,129 @@ TEST_F(LOC_Compiler_Common, FullCompilerCheck)
     // Free memory
     delete root;
     delete newRoot;
+}
+
+TEST_F(LOC_Compiler_Common, ShortCheckPathFinder)
+{
+    static const char* kChild { "Child" };
+
+    auto root = LOCTreeFactory::Create();
+    auto child = LOCTreeFactory::Create("Child", "Another one", root);
+    root->AddChild(child);
+
+    // compile
+    std::vector<uint8_t> compiledBuffer {};
+    bool compileResult = false;
+
+    ASSERT_NO_THROW((compileResult = LOCTreeNode::Compile(root, compiledBuffer)));
+    ASSERT_TRUE(compileResult);
+
+    // try to find exists key
+    auto val = ResourceCollection::Lookup((char*)kChild, (char*)compiledBuffer.data());
+    ASSERT_NE(val, nullptr);
+    ASSERT_EQ(std::string(val + 1), child->value);
+
+    // Free
+    delete root;
+}
+
+TEST_F(LOC_Compiler_Common, CheckLocFinderInDeepTree)
+{
+    /**
+     * Tree:
+     *      /AllLevels
+     *          /Actions
+     *              /OpenDoor = "Open this door!"
+     *              /CloseDoor = "Close this door!"
+     *              /SomeThirdAction = "Some cool action"
+     *          /Dialogs
+     *              /First = "First long text ..."
+     *
+     * Valid paths:
+     * /AllLevels/Actions/OpenDoor
+     * /AllLevels/Actions/CloseDoor
+     * /AllLevels/Actions/SomeThirdAction
+     * /AllLevels/Dialogs/First
+     */
+    auto root = LOCTreeFactory::Create();
+
+    auto AllLevels = LOCTreeFactory::Create("AllLevels", TreeNodeType::NODE_WITH_CHILDREN, root);
+    root->AddChild(AllLevels);
+
+    auto Actions = LOCTreeFactory::Create("Actions", TreeNodeType::NODE_WITH_CHILDREN, AllLevels);
+    AllLevels->AddChild(Actions);
+
+    auto OpenDoor = LOCTreeFactory::Create("OpenDoor", "Open this door!", Actions);
+    Actions->AddChild(OpenDoor);
+
+    auto CloseDoor = LOCTreeFactory::Create("CloseDoor", "Close this door!", Actions);
+    Actions->AddChild(CloseDoor);
+
+    auto SomeThirdAction = LOCTreeFactory::Create("SomeThirdAction", "Some cool action", Actions);
+    Actions->AddChild(SomeThirdAction);
+
+    auto Dialogs = LOCTreeFactory::Create("Dialogs", TreeNodeType::NODE_WITH_CHILDREN, AllLevels);
+    AllLevels->AddChild(Dialogs);
+
+    auto First = LOCTreeFactory::Create("First", "First long text ...", Dialogs);
+    Dialogs->AddChild(First);
+
+    // Compile
+    std::vector<uint8_t> compiledBuffer {};
+    bool compileResult = false;
+
+    ASSERT_NO_THROW((compileResult = LOCTreeNode::Compile(root, compiledBuffer)));
+    ASSERT_TRUE(compileResult);
+
+    static const char* kOpenDoorPath        = "/AllLevels/Actions/OpenDoor";
+    static const char* kOpenDoorValue        = "Open this door!";
+
+    static const char* kCloseDoorPath       = "/AllLevels/Actions/CloseDoor";
+    static const char* kCloseDoorValue       = "Close this door!";
+
+    static const char* kSomeThirdActionPath = "/AllLevels/Actions/SomeThirdAction";
+    static const char* kSomeThirdActionValue = "Some cool action";
+
+    static const char* kDialogsFirstPath    = "/AllLevels/Dialogs/First";
+    static const char* kDialogsFirstValue    = "First long text ...";
+
+    {
+        char* result = ResourceCollection::Lookup((char*)kOpenDoorPath, (char*)compiledBuffer.data());
+        EXPECT_NE(result, nullptr);
+        if (result != nullptr)
+        {
+            EXPECT_EQ(std::string(result + 1), std::string(kOpenDoorValue));
+        }
+    }
+
+    {
+        char* result = ResourceCollection::Lookup((char*)kCloseDoorPath, (char*)compiledBuffer.data());
+        EXPECT_NE(result, nullptr);
+        if (result != nullptr)
+        {
+            EXPECT_EQ(std::string(result + 1), std::string(kCloseDoorValue));
+        }
+    }
+
+    {
+        char* result = ResourceCollection::Lookup((char*)kSomeThirdActionPath, (char*)compiledBuffer.data());
+        EXPECT_NE(result, nullptr);
+        if (result != nullptr)
+        {
+            EXPECT_EQ(std::string(result + 1), std::string(kSomeThirdActionValue));
+        }
+    }
+
+    {
+        char* result = ResourceCollection::Lookup((char*)kDialogsFirstPath, (char*)compiledBuffer.data());
+        EXPECT_NE(result, nullptr);
+        if (result != nullptr)
+        {
+            EXPECT_EQ(std::string(result + 1), std::string(kDialogsFirstValue));
+        }
+    }
+
+    delete root;
 }
 
 void LOC_Compiler_Common::CheckSampleTree(const LOCTreeNode* root)
@@ -203,30 +332,31 @@ LOCTreeNode* LOC_Compiler_Common::CreateSampleTree()
     return root;
 }
 
-class ResourceCollection
-{
-public:
-    static char* Lookup(char* key, char* contents);
-};
-
 void LOC_Compiler_Common::CheckCompiledSampleTreViaDictionary(char* buffer)
 {
-    const std::unordered_map<std::string, std::string> keysAndValues = {
-            // With leading slash
-            { "/AllLevels/Actions/OpenDoor", "Open Door" },
-            { "/AllLevels/Actions/CloseDoor", "Close Door" },
-            { "/M01/Actions/Wakeup", "Wake Up" },
-            // Without leading slash
-            { "AllLevels/Actions/OpenDoor", "Open Door" },
-            { "AllLevels/Actions/CloseDoor", "Close Door" },
-            { "M01/Actions/Wakeup", "Wake Up" }
-    };
+    static const char* kPath1 = "/AllLevels/Actions/OpenDoor";
+    static const char* kPath2 = "/AllLevels/Actions/CloseDoor";
+    static const char* kPath3 = "/M01/Actions/Wakeup";
 
-    for (const auto& [key, value] : keysAndValues)
+    const char* kValue1 = ResourceCollection::Lookup((char*)kPath1, buffer);
+    EXPECT_NE(kValue1, nullptr);
+    if (kValue1 != nullptr)
     {
-        const char* got = ResourceCollection::Lookup((char*)key.c_str(), buffer);
-        ASSERT_NE(got, nullptr);
-        ASSERT_EQ(std::string(got), value);
+        EXPECT_EQ(std::string(kValue1 + 1), std::string("Open Door"));
+    }
+
+    const char* kValue2 = ResourceCollection::Lookup((char*)kPath2, buffer);
+    EXPECT_NE(kValue2, nullptr);
+    if (kValue2 != nullptr)
+    {
+        EXPECT_EQ(std::string(kValue2 + 1), std::string("Close Door"));
+    }
+
+    const char* kValue3 = ResourceCollection::Lookup((char*)kPath3, buffer);
+    EXPECT_NE(kValue3, nullptr);
+    if (kValue3 != nullptr)
+    {
+        EXPECT_EQ(std::string(kValue3 + 1), std::string("Wake Up"));
     }
 }
 

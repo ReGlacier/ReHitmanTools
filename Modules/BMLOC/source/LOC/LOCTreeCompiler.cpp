@@ -3,10 +3,9 @@
 
 namespace BM::LOC
 {
-    static size_t GetStringAlignedLength(std::string_view str, size_t pos, size_t al)
+    static size_t GetStringAlignedLength(std::string_view str)
     {
-        if (str.length() < al) return al;
-        return str.length() + 1;
+        return str.length() + 1 + 4; // +1 - zero terminator, +4 alignment
     }
 
     /**
@@ -21,7 +20,7 @@ namespace BM::LOC
                 " not included in " + std::to_string(buffer.size() - 1) };
         }
 
-        size_t strLen = GetStringAlignedLength(str, offset, alignment);
+        size_t strLen = GetStringAlignedLength(str);
 
         if (offset + strLen >= buffer.size())
         {
@@ -107,6 +106,10 @@ namespace BM::LOC
      */
     static size_t CalculateUsedMemoryAndMarkLocations(LOCTreeNode* node, size_t startPosition)
     {
+        auto FixAddress = [](uint32_t addr, uint32_t divBy) -> uint32_t {
+            return addr % divBy == 0 ? addr : (addr + divBy - (addr % divBy));
+        };
+
         if (node->IsContainer())
         {
             if (node->IsRoot())
@@ -167,7 +170,7 @@ namespace BM::LOC
             size_t endPosition = startPosition;
             endPosition += node->name.length() + 1; // For node name
             endPosition += 1; // For type byte
-            endPosition += GetStringAlignedLength(node->value, endPosition, kAlignment) + 1;
+            endPosition += GetStringAlignedLength(node->value) + 1;
             node->memoryMarkup = LOCTreeNode::MemoryMarkup { startPosition, endPosition };
         }
         else
