@@ -58,6 +58,9 @@ namespace BM::LOC
         // Compiler
         static bool Compile(LOCTreeNode* root, std::vector<uint8_t>& compiledBuffer);
 
+        // Serializer
+        static void CompileAndSave(LOCTreeNode* root, std::string_view pathToFile);
+
     private:
         /**
          * @fn Visit node by node and extract useful information

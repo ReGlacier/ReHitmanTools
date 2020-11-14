@@ -1,7 +1,9 @@
 #include <BM/LOC/LOCTreeCompiler.h>
 #include <BM/LOC/LOCTree.h>
 
+#include <fstream>
 #include <cassert>
+#include <vector>
 
 namespace BM::LOC
 {
@@ -97,6 +99,37 @@ namespace BM::LOC
         if (root->numChild < 0 || root->numChild > 0xFF) throw std::exception { "To many root nodes! Allowed only 255 (0xFF) max!" };
 
         return LOCTreeCompiler::Compile(compiledBuffer, root);
+    }
+
+    void LOCTreeNode::CompileAndSave(LOCTreeNode* root, std::string_view pathToFile)
+    {
+        if (!root || !root->IsRoot() || root->IsEmpty()) throw std::exception { "LOCTreeNode::Save| Bad root node! Unable to serialize it!" };
+        if (root->numChild < 0 || root->numChild > 0xFF) throw std::exception { "LOCTreeNode::Save| Too many root nodes! Max allowed 255, min 1" };
+
+        std::ofstream file(pathToFile.data(), std::ofstream::trunc | std::ofstream::out);
+        LOCTreeCompiler::Buffer compiledBuffer {};
+
+        if (!file)
+        {
+            throw std::exception { "LOCTreeNode::Save| Unable to create output file!" };
+        }
+
+        try
+        {
+            bool compileResult = LOCTreeNode::Compile(root, compiledBuffer);
+            if (!compileResult)
+            {
+                file.close();
+                throw std::exception { "LOCTreeNode::Save| Unable to compile tree" };
+            }
+
+            file.write((char*)compiledBuffer.data(), compiledBuffer.size());
+            file.close();
+        } catch (...)
+        {
+            file.close();
+            throw;
+        }
     }
 
     void LOCTreeNode::VisitNode(LOCTreeNode* treeNode)

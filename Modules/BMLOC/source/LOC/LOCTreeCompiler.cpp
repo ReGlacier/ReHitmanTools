@@ -11,9 +11,9 @@ namespace BM::LOC
     /**
      * @return next caret position after aligned string written with zeros on align pos
      */
-    static size_t WriteZStringAligned(LOCTreeCompiler::Buffer& buffer, size_t offset, const std::string& str, size_t alignment)
+    static size_t WriteZStringAligned(LOCTreeCompiler::Buffer& buffer, size_t offset, std::string_view str)
     {
-        if (offset >= buffer.size())
+        if (offset > buffer.size())
         {
             throw std::out_of_range {
                 "WriteZStringAligned: Out of range! Offset " + std::to_string(offset) +
@@ -22,7 +22,7 @@ namespace BM::LOC
 
         size_t strLen = GetStringAlignedLength(str);
 
-        if (offset + strLen >= buffer.size())
+        if (offset + strLen > buffer.size())
         {
             throw std::out_of_range {
                 "WriteZStringAligned: Out of range! String buffer at " + std::to_string(offset) +
@@ -106,10 +106,6 @@ namespace BM::LOC
      */
     static size_t CalculateUsedMemoryAndMarkLocations(LOCTreeNode* node, size_t startPosition)
     {
-        auto FixAddress = [](uint32_t addr, uint32_t divBy) -> uint32_t {
-            return addr % divBy == 0 ? addr : (addr + divBy - (addr % divBy));
-        };
-
         if (node->IsContainer())
         {
             if (node->IsRoot())
@@ -170,7 +166,7 @@ namespace BM::LOC
             size_t endPosition = startPosition;
             endPosition += node->name.length() + 1; // For node name
             endPosition += 1; // For type byte
-            endPosition += GetStringAlignedLength(node->value) + 1;
+            endPosition += GetStringAlignedLength(node->value);
             node->memoryMarkup = LOCTreeNode::MemoryMarkup { startPosition, endPosition };
         }
         else
@@ -181,7 +177,13 @@ namespace BM::LOC
         return node->memoryMarkup.value().EndsAt;
     }
 
-    static void WriteTreeNodesIntoMarkedUpMemory(LOCTreeCompiler::Buffer& buffer, LOCTreeNode* node)
+    /**
+     * @brief This function compiles node into the allocated buffer (no reallocations, the buffer must be resized already)
+     * @note This function not checking an incoming node for recursive references. Be aware of that.
+     * @param buffer allocated bytes buffer
+     * @param node pointer to already marked up node
+     */
+    static void WriteTreeNodesIntoMarkedUpMemory(LOCTreeCompiler::Buffer& buffer, LOCTreeNode* node) // NOLINT(misc-no-recursion)
     {
         if (!node) throw std::exception { "WriteTreeNodesIntoMarkedUpMemory: Bad node pointer" };
         if (!node->memoryMarkup.has_value()) throw std::exception { "WriteTreeNodesIntoMarkedUpMemory: Node was not marked up!" };
@@ -238,7 +240,7 @@ namespace BM::LOC
         {
             size_t positionAfterString = WriteZString(buffer, markup.StartsAt, node->name); //Write full string
             WriteByte(buffer, positionAfterString++, node->originalTypeRawData.has_value() ? node->originalTypeRawData.value() : static_cast<uint8_t>(node->nodeType)); //Write leading byte
-            WriteZStringAligned(buffer, positionAfterString, node->value, kAlignment); // Write aligned value
+            WriteZStringAligned(buffer, positionAfterString, node->value); // Write aligned value
         }
     }
 

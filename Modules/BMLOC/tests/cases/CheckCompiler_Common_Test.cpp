@@ -191,6 +191,9 @@ TEST_F(LOC_Compiler_Common, CheckLocFinderInDeepTree)
     static const char* kDialogsFirstPath    = "/AllLevels/Dialogs/First";
     static const char* kDialogsFirstValue    = "First long text ...";
 
+    // For debug (TODO: Remove after debug)
+    //LOCTreeNode::CompileAndSave(root, "test.LOC");
+
     {
         char* result = ResourceCollection::Lookup((char*)kOpenDoorPath, (char*)compiledBuffer.data());
         EXPECT_NE(result, nullptr);
