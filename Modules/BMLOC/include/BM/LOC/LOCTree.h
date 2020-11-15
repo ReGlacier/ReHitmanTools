@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <string_view>
 #include <string>
 #include <vector>
@@ -58,6 +59,8 @@ namespace BM::LOC
         static LOCTreeNode* ReadFromMemory(char* buffer, size_t bufferSize);
 
         // Compiler
+        using CacheDataBase = std::unordered_map<std::string, std::string>;
+        static void GenerateCacheDataBase(LOCTreeNode* root, CacheDataBase& cache);
         static bool Compile(LOCTreeNode* root, std::vector<uint8_t>& compiledBuffer);
 
         // Serializer

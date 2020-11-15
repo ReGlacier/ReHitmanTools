@@ -115,6 +115,42 @@ namespace BM::LOC
         return root;
     }
 
+    static void VisitAndMarkNode(LOCTreeNode* node, LOCTreeNode::CacheDataBase& cache, const std::string& currentKey) // NOLINT(misc-no-recursion)
+    {
+        if (node->IsData())
+        {
+            std::string finalKey = currentKey;
+
+            if (finalKey[finalKey.length() - 1] != '/')
+                finalKey += '/';
+
+            finalKey += node->name;
+            cache[finalKey] = node->value;
+        }
+        else if (node->IsContainer() && node->numChild > 0)
+        {
+            std::string finalKey = currentKey;
+
+            if (!node->IsRoot())
+            {
+                if (finalKey[finalKey.length() - 1] != '/')
+                    finalKey += '/';
+
+                finalKey += node->name;
+            }
+
+            for (int i = 0; i < node->numChild; i++)
+            {
+                VisitAndMarkNode(node->children[i], cache, finalKey);
+            }
+        }
+    }
+
+    void LOCTreeNode::GenerateCacheDataBase(LOCTreeNode* root, LOCTreeNode::CacheDataBase& cache)
+    {
+        VisitAndMarkNode(root, cache, "/");
+    }
+
     bool LOCTreeNode::Compile(LOCTreeNode* root, std::vector<uint8_t>& compiledBuffer)
     {
         if (!root || !root->IsRoot() || root->IsEmpty()) throw std::exception { "Bad root node! It's actually not root or empty" };
@@ -240,8 +276,8 @@ namespace BM::LOC
             return; // Do not look for any child here
         }
 
-        auto countOfChildNodes = static_cast<int8_t>(*treeNode->currentBufferPtr);
-        if (countOfChildNodes <= 0)
+        auto countOfChildNodes = static_cast<uint8_t>(*treeNode->currentBufferPtr);
+        if (countOfChildNodes == 0)
             return; // Orphaned or broken node, not interested for us
 
         char* offsetsPtr = (char*)&treeNode->currentBufferPtr[1];
