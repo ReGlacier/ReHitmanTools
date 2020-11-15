@@ -123,11 +123,14 @@ namespace BM::LOC
                  */
                 size_t endPosition = startPosition;
                 endPosition += 1; // For count of children
-                endPosition += (sizeof(uint32_t) * (node->numChild - 1)); // Space for offsets table without leading entity
-                endPosition = CalculateUsedMemoryAndMarkLocations(node->children[0], endPosition);
-                for (int i = 1; i < node->numChild; i++)
+                if (node->numChild > 0)
                 {
-                    endPosition = CalculateUsedMemoryAndMarkLocations(node->children[i], endPosition);
+                    endPosition += (sizeof(uint32_t) * (node->numChild - 1)); // Space for offsets table without leading entity
+                    endPosition = CalculateUsedMemoryAndMarkLocations(node->children[0], endPosition);
+                    for (int i = 1; i < node->numChild; i++)
+                    {
+                        endPosition = CalculateUsedMemoryAndMarkLocations(node->children[i], endPosition);
+                    }
                 }
                 node->memoryMarkup = LOCTreeNode::MemoryMarkup { startPosition, endPosition };
             }
@@ -147,11 +150,14 @@ namespace BM::LOC
                 endPosition += node->name.length() + 1; // For name of the node
                 endPosition += 1; // For type byte
                 endPosition += 1; // For num child
-                endPosition += sizeof(uint32_t) * (node->numChild - 1); // For index table
-                endPosition = CalculateUsedMemoryAndMarkLocations(node->children[0], endPosition);
-                for (int i = 1; i < node->numChild; i++)
+                if (node->numChild > 0)
                 {
-                    endPosition = CalculateUsedMemoryAndMarkLocations(node->children[i], endPosition);
+                    endPosition += sizeof(uint32_t) * (node->numChild - 1); // For index table
+                    endPosition = CalculateUsedMemoryAndMarkLocations(node->children[0], endPosition);
+                    for (int i = 1; i < node->numChild; i++)
+                    {
+                        endPosition = CalculateUsedMemoryAndMarkLocations(node->children[i], endPosition);
+                    }
                 }
                 node->memoryMarkup = LOCTreeNode::MemoryMarkup { startPosition, endPosition };
             }

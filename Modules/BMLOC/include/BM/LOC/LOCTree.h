@@ -63,6 +63,9 @@ namespace BM::LOC
         // Serializer
         static void CompileAndSave(LOCTreeNode* root, std::string_view pathToFile);
 
+        // Comparator
+        static bool Compare(LOCTreeNode* a, LOCTreeNode* b);
+
     private:
         /**
          * @fn Visit node by node and extract useful information

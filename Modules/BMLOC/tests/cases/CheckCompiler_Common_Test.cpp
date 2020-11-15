@@ -80,6 +80,48 @@ TEST_F(LOC_Compiler_Common, LocSerialization)
     delete deserializedRoot;
 }
 
+TEST_F(LOC_Compiler_Common, SerializeAndDeSerializeTreeWithDeadEnds)
+{
+    /*
+     * Tree:
+     *      /AllLevels
+     *          /Enemies !root node without children!
+     *          /Allies
+     *              /1 - "Diana"
+     *              /2 - "Smith"
+     *
+     */
+    auto root = LOCTreeFactory::Create();
+    auto AllLevels = LOCTreeFactory::Create("AllLevels", TreeNodeType::NODE_WITH_CHILDREN, root);
+    root->AddChild(AllLevels);
+
+    auto Enemies = LOCTreeFactory::Create("Enemies", TreeNodeType::NODE_WITH_CHILDREN, AllLevels);
+    AllLevels->AddChild(Enemies);
+
+    auto Allies = LOCTreeFactory::Create("Allies", TreeNodeType::NODE_WITH_CHILDREN, AllLevels);
+    AllLevels->AddChild(Allies);
+
+    auto AL01 = LOCTreeFactory::Create("1", "Diana", Allies);
+    Allies->AddChild(AL01);
+
+    auto AL02 = LOCTreeFactory::Create("2", "Smith", Allies);
+    Allies->AddChild(AL02);
+
+    // Serialize to json
+    nlohmann::json source;
+
+    ASSERT_NO_THROW(nlohmann::adl_serializer<LOCTreeNode>::to_json(source, root));
+
+    // Deserialize back
+    LOCTreeNode* newRoot = LOCTreeFactory::Create();
+    ASSERT_NO_THROW(nlohmann::adl_serializer<LOCTreeNode>::from_json(source, newRoot));
+
+    // Compare trees
+    bool equality = false;
+    ASSERT_NO_THROW((equality = LOCTreeNode::Compare(root, newRoot)));
+    ASSERT_TRUE(equality);
+}
+
 TEST_F(LOC_Compiler_Common, FullCompilerCheck)
 {
     // Generate sample tree

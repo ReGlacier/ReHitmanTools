@@ -154,6 +154,62 @@ namespace BM::LOC
         }
     }
 
+    bool LOCTreeNode::Compare(LOCTreeNode* a, LOCTreeNode* b)
+    {
+        if (!a || !b)
+        {
+            return false;
+        }
+        if (a->IsRoot() != b->IsRoot())
+        {
+            return false;
+        }
+        if (!a->IsRoot() && a->name != b->name)
+        {
+            return false;
+        }
+        if (a->IsData() != b->IsData())
+        {
+            return false;
+        }
+        if (a->IsData() && a->value != b->value)
+        {
+            return false;
+        }
+        if (a->IsContainer() != b->IsContainer())
+        {
+            return false;
+        }
+        if (a->originalTypeRawData.has_value() != b->originalTypeRawData.has_value())
+        {
+            return false;
+        }
+        if (a->originalTypeRawData.has_value())
+        {
+            const auto& aOrgType = a->originalTypeRawData.value();
+            const auto& bOrgType = b->originalTypeRawData.value();
+            if (aOrgType != bOrgType)
+            {
+                return false;
+            }
+        }
+        if (a->IsContainer())
+        {
+            if (a->numChild != b->numChild) return false;
+            assert(a->numChild == a->children.size());
+            assert(b->numChild == b->children.size());
+
+            for (int i = 0; i < a->numChild; i++)
+            {
+                if (!LOCTreeNode::Compare(a->children[i], b->children[i]))
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     void LOCTreeNode::VisitNode(LOCTreeNode* treeNode)
     {
         if (treeNode->parent)
