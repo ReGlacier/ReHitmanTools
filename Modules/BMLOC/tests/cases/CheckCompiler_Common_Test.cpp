@@ -68,7 +68,7 @@ TEST_F(LOC_Compiler_Common, LocSerialization)
     // Deserialize
     LOCTreeNode* deserializedRoot = nullptr;
     {
-        deserializedRoot = new LOCTreeNode(nullptr, nullptr);
+        deserializedRoot = LOCTreeFactory::Create();
         auto locJson = nlohmann::json::parse(locJsonStr);
         nlohmann::adl_serializer<LOCTreeNode>::from_json(locJson, deserializedRoot);
     }
@@ -142,7 +142,8 @@ TEST_F(LOC_Compiler_Common, CheckLocFinderInDeepTree)
      *              /SomeThirdAction = "Some cool action"
      *          /Dialogs
      *              /First = "First long text ..."
-     *
+     *      /M13
+     *          /SceneName = "Requiem"
      * Valid paths:
      * /AllLevels/Actions/OpenDoor
      * /AllLevels/Actions/CloseDoor
@@ -172,6 +173,12 @@ TEST_F(LOC_Compiler_Common, CheckLocFinderInDeepTree)
     auto First = LOCTreeFactory::Create("First", "First long text ...", Dialogs);
     Dialogs->AddChild(First);
 
+    auto M13 = LOCTreeFactory::Create("M13", TreeNodeType::NODE_WITH_CHILDREN, root);
+    root->AddChild(M13);
+
+    auto SceneName = LOCTreeFactory::Create("SceneName", "Requiem", M13);
+    M13->AddChild(SceneName);
+
     // Compile
     std::vector<uint8_t> compiledBuffer {};
     bool compileResult = false;
@@ -191,20 +198,17 @@ TEST_F(LOC_Compiler_Common, CheckLocFinderInDeepTree)
     static const char* kDialogsFirstPath    = "/AllLevels/Dialogs/First";
     static const char* kDialogsFirstValue    = "First long text ...";
 
-    // For debug (TODO: Remove after debug)
-    //LOCTreeNode::CompileAndSave(root, "test.LOC");
-
     {
-        char* result = ResourceCollection::Lookup((char*)kOpenDoorPath, (char*)compiledBuffer.data());
+        char* result = ResourceCollection::Lookup((char*)kOpenDoorPath, (char*)compiledBuffer.data()); //OK
         EXPECT_NE(result, nullptr);
         if (result != nullptr)
         {
             EXPECT_EQ(std::string(result + 1), std::string(kOpenDoorValue));
         }
     }
-
+//
     {
-        char* result = ResourceCollection::Lookup((char*)kCloseDoorPath, (char*)compiledBuffer.data());
+        char* result = ResourceCollection::Lookup((char*)kCloseDoorPath, (char*)compiledBuffer.data()); //OK
         EXPECT_NE(result, nullptr);
         if (result != nullptr)
         {
@@ -213,7 +217,7 @@ TEST_F(LOC_Compiler_Common, CheckLocFinderInDeepTree)
     }
 
     {
-        char* result = ResourceCollection::Lookup((char*)kSomeThirdActionPath, (char*)compiledBuffer.data());
+        char* result = ResourceCollection::Lookup((char*)kSomeThirdActionPath, (char*)compiledBuffer.data()); //OK
         EXPECT_NE(result, nullptr);
         if (result != nullptr)
         {
@@ -222,7 +226,7 @@ TEST_F(LOC_Compiler_Common, CheckLocFinderInDeepTree)
     }
 
     {
-        char* result = ResourceCollection::Lookup((char*)kDialogsFirstPath, (char*)compiledBuffer.data());
+        char* result = ResourceCollection::Lookup((char*)kDialogsFirstPath, (char*)compiledBuffer.data()); //OK
         EXPECT_NE(result, nullptr);
         if (result != nullptr)
         {
@@ -257,16 +261,16 @@ void LOC_Compiler_Common::CheckSampleTree(const LOCTreeNode* root)
     ASSERT_EQ(root->children[0]->children[0]->children.size(), root->children[0]->children[0]->numChild);
     ASSERT_EQ(root->children[0]->children[0]->parent, root->children[0]);
 
-    // AllLevels/Actions/OpenDoor
+    // AllLevels/Actions/CloseDoor
     ASSERT_EQ(root->children[0]->children[0]->children[0]->nodeType, TreeNodeType::VALUE_OR_DATA);
-    ASSERT_EQ(root->children[0]->children[0]->children[0]->name, "OpenDoor");
-    ASSERT_EQ(root->children[0]->children[0]->children[0]->value, "Open Door");
+    ASSERT_EQ(root->children[0]->children[0]->children[0]->name, "CloseDoor");
+    ASSERT_EQ(root->children[0]->children[0]->children[0]->value, "Close Door");
     ASSERT_EQ(root->children[0]->children[0]->children[0]->parent, root->children[0]->children[0]);
 
-    // AllLevels/Actions/CloseDoor
+    // AllLevels/Actions/OpenDoor
     ASSERT_EQ(root->children[0]->children[0]->children[1]->nodeType, TreeNodeType::VALUE_OR_DATA);
-    ASSERT_EQ(root->children[0]->children[0]->children[1]->name, "CloseDoor");
-    ASSERT_EQ(root->children[0]->children[0]->children[1]->value, "Close Door");
+    ASSERT_EQ(root->children[0]->children[0]->children[1]->name, "OpenDoor");
+    ASSERT_EQ(root->children[0]->children[0]->children[1]->value, "Open Door");
     ASSERT_EQ(root->children[0]->children[0]->children[1]->parent, root->children[0]->children[0]);
 
     // M01
@@ -363,14 +367,14 @@ void LOC_Compiler_Common::CheckCompiledSampleTreViaDictionary(char* buffer)
     }
 }
 
-char * ResourceCollection::Lookup(char* key, char* buffer)
+char* ResourceCollection::Lookup(char* key, char* buffer)
 {
     // This is result of reverse engineering of function at 0x00464FF0 aka ResourceCollection::Lookup
     char *keyWithoutLeadingSlash; // edx
     char currentChar; // al
     char currentCharInKeyWithoutLeadingSlash; // al
     size_t newIndex; // ecx
-    int currentKeyOffset; // ebx
+    int numChild; // ebx
     int keyIndex; // ebp
     int v8; // edi
     int v9; // eax
@@ -379,7 +383,7 @@ char * ResourceCollection::Lookup(char* key, char* buffer)
     int v12; // esi
     char *valuePtr; // edx
     size_t index; // [esp+10h] [ebp-Ch]
-    int firstEntityKeyOffset; // [esp+14h] [ebp-8h]
+    int numChildOrg; // [esp+14h] [ebp-8h]
     char *pChunkName; // [esp+18h] [ebp-4h]
 
     while (true)
@@ -413,45 +417,51 @@ char * ResourceCollection::Lookup(char* key, char* buffer)
         }
 
         /// KEY SEARCH AT THE CURRENT BRANCH
-        currentKeyOffset = (unsigned __int8)*buffer; // First byte - the offset from formula firstEntryLocation(offset) = 4 * offset- 3
+        numChild = (unsigned __int8)*buffer;
         keyIndex = 0;
-        firstEntityKeyOffset = (unsigned __int8)*buffer;
-        if (currentKeyOffset <= 0 )
+        numChildOrg = (unsigned __int8)*buffer;
+        if (numChild <= 0 )
             goto OnOrphanedTreeNodeDetected;
 
-        pChunkName = &buffer[4 * currentKeyOffset - 3];
+        pChunkName = &buffer[4 * numChild - 3];
         do
         {
-            v8 = (currentKeyOffset >> 1) + keyIndex; /// Divide by two (fast method) + keyIndex
+            v8 = (numChild >> 1) + keyIndex;
             if ( v8 )
                 v9 = *(int *)&buffer[4 * v8 - 3];
             else
                 v9 = 0;
-            if (strnicmp(&pChunkName[v9], keyWithoutLeadingSlash, newIndex) >= 0 ) // if value of first group greater or equal to our key
+
+            int ret = 0;
+            if ((ret = strnicmp(&pChunkName[v9], keyWithoutLeadingSlash, newIndex)) >= 0) // if value of first group greater or equal to our key
             {
-                currentKeyOffset >>= 1; // Divide by two
+                numChild >>= 1; // Divide by two
             }
             else // Group name is less than our key
             {
                 keyIndex = v8 + 1;
-                currentKeyOffset += -1 - (currentKeyOffset >> 1);
+                numChild += -1 - (numChild >> 1);
             }
 
             newIndex = index;
             keyWithoutLeadingSlash = key;
         }
-        while (currentKeyOffset > 0);
+        while (numChild > 0);
 
         /// VALUE RESOLVING
-        currentKeyOffset = firstEntityKeyOffset; //Restore back? o_0
+        numChild = numChildOrg; //Restore back? o_0
         if ( keyIndex )
             v10 = *(int*)&buffer[4 * keyIndex - 3];
         else
         OnOrphanedTreeNodeDetected:
             v10 = 0;
-        v11 = v10 + 4 * currentKeyOffset - 3;
-        if (keyIndex >= currentKeyOffset || strnicmp(&buffer[v11], keyWithoutLeadingSlash, newIndex) )
+        v11 = v10 + 4 * numChild - 3;
+
+        int ret = 0;
+        if (keyIndex >= numChild || (ret = strnicmp(&buffer[v11], keyWithoutLeadingSlash, newIndex)))
+        {
             return nullptr;
+        }
 
         /// ITERATION OVER TREE
         v12 = index + v11;
@@ -459,7 +469,9 @@ char * ResourceCollection::Lookup(char* key, char* buffer)
         buffer += v12 + 2;
 
         if ( !key[index] )
+        {
             return valuePtr - 1;
+        }
 
         key += index + 1;
     }

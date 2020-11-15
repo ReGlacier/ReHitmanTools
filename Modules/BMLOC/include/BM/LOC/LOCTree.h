@@ -15,10 +15,14 @@ namespace BM::LOC
     struct LOCTreeNode
     {
         // Editor defs
+        /**
+         * @struct MemoryMarkup
+         * @brief In-memory location of the node. This value used only in the compiler!
+         */
         struct MemoryMarkup
         {
-            uint32_t StartsAt {0 };
-            uint32_t EndsAt { 0 };
+            uint32_t StartsAt {0 }; ///< Node starts at
+            uint32_t EndsAt { 0 }; ///< Node ends at
 
             MemoryMarkup() = default;
             MemoryMarkup(uint32_t o, uint32_t e) : StartsAt(o), EndsAt(e) {}
@@ -26,21 +30,19 @@ namespace BM::LOC
 
         // Defs
         static constexpr const char* kNoName = "<NONAME>";
-        static constexpr int kRootNodeDepth = 0;
 
         // Base info
-        LOCTreeNode* parent {nullptr};
-        char* currentBufferPtr {nullptr};
-        std::string name{kNoName};
+        LOCTreeNode* parent {nullptr}; //Pointer to parent node
+        char* currentBufferPtr {nullptr}; //Available only in decompiler (be aware, if original buffer deallocated this pointer will be broken)
+        std::string name{kNoName}; //Name of node (could be empty for ROOT node)
         std::string value; //Always string? Check it later
-        int8_t currentOffset{0}; //Not used in import mode, used in export mode
         TreeNodeType nodeType{0}; //See TreeNodeType for details
         std::optional<uint8_t> originalTypeRawData; //Original raw data if it was overridden by decompiler (just for reconstruction)
         std::optional<MemoryMarkup> memoryMarkup; //Only for compiler for fast memory position search
 
         // Tree data
-        size_t numChild {0};
-        std::vector<LOCTreeNode*> children {};
+        size_t numChild {0}; //Number of children nodes
+        std::vector<LOCTreeNode*> children {}; //List of children nodes (please, add node through AddChild!)
 
         // Methods
         LOCTreeNode(LOCTreeNode* p, char* b);
@@ -67,5 +69,11 @@ namespace BM::LOC
          * @param treeNode pointer to the root node
          */
         static void VisitNode(LOCTreeNode* treeNode);
+
+        /**
+         * @fn SortKeys
+         * @brief Should be called after AddChild or RemoveChild!
+         */
+        void SortKeys();
     };
 }

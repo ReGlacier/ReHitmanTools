@@ -1,6 +1,7 @@
 #include <BM/LOC/LOCTreeCompiler.h>
 #include <BM/LOC/LOCTree.h>
 
+#include <algorithm>
 #include <fstream>
 #include <cassert>
 #include <vector>
@@ -39,6 +40,8 @@ namespace BM::LOC
 
         children.push_back(node);
         numChild = children.size();
+
+        SortKeys();
     }
 
     void LOCTreeNode::RemoveChild(LOCTreeNode* node)
@@ -56,6 +59,8 @@ namespace BM::LOC
         {
             children.erase(it);
             numChild = children.size();
+
+            SortKeys();
         }
     }
 
@@ -84,6 +89,23 @@ namespace BM::LOC
     bool LOCTreeNode::IsContainer() const
     {
         return nodeType == TreeNodeType::NODE_WITH_CHILDREN;
+    }
+
+    void LOCTreeNode::SortKeys()
+    {
+        if (children.size() <= 1)
+        {
+            return; // Nothing to sort here
+        }
+
+        auto SortPred = [](const LOCTreeNode* first, const LOCTreeNode* second) -> bool {
+            assert(!first->name.empty());
+            assert(!second->name.empty());
+
+            return first->name < second->name;
+        };
+
+        std::sort(std::begin(children), std::end(children), SortPred);
     }
 
     LOCTreeNode* LOCTreeNode::ReadFromMemory(char* buffer, size_t bufferSize)

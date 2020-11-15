@@ -120,7 +120,8 @@ namespace nlohmann
             if (auto nameIterator = j.find(kNameToken); nameIterator != j.end())
             {
                 node->name = nameIterator->get<std::string>();
-            } else if (!node->IsRoot())
+            }
+            else if (!node->IsRoot())
             {
                 throw std::exception { "Not allowed to store non-root anonymous node!" };
             }
@@ -153,7 +154,8 @@ namespace nlohmann
                     {
                         node->numChild = numChildIterator->get<size_t>();
                         node->children.reserve(node->numChild);
-                    } else throw std::exception { "Key 'numChild' not found for NWC node!" };
+                    }
+                    else throw std::exception { "Key 'numChild' not found for NWC node!" };
 
                     if (auto childrenIterator = j.find(kChildrenListToken); childrenIterator != j.end())
                     {
@@ -167,12 +169,12 @@ namespace nlohmann
                         for (int i = 0; i < requiredNumChild; i++)
                         {
                             auto child = new BM::LOC::LOCTreeNode(node, nullptr);
-                            node->AddChild(child);
 
                             try
                             {
                                 auto jsonChild = childrenIterator->at(i);
                                 nlohmann::adl_serializer<BM::LOC::LOCTreeNode>::from_json(jsonChild, child);
+                                node->AddChild(child);
                             }
                             catch (const nlohmann::json::out_of_range& outOfRange)
                             {
