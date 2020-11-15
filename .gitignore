@@ -3,3 +3,6 @@
 build
 cmake-build-*
 venv
+
+# Ignore zlib generated header
+/Modules/zlib/zconf.h.included
