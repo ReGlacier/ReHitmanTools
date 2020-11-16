@@ -3,7 +3,6 @@
  **/
 #include <string>
 
-#include <argh.h>
 #include <spdlog/spdlog.h>
 
 #include <TypesDataBase.h>
@@ -13,7 +12,7 @@ static constexpr const char* kDefaultTypeStorageFile = "typeids.json";
 
 int main(int argc, char** argv)
 {
-    argh::parser cli(argc, argv);
+    /*argh::parser cli(argc, argv);
 
     bool printLevelInfo;
     bool ignoreGMS { false };
@@ -99,7 +98,6 @@ int main(int argc, char** argv)
             }
         }
     }
-
-
+    */
     return 0;
 }
