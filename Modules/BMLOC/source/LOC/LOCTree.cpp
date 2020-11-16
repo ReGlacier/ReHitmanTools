@@ -117,14 +117,22 @@ namespace BM::LOC
             case LOCSupportMode::Hitman_BloodMoney:
             {
                 auto root = new LOCTreeNode(nullptr, buffer);
-                BM::LOC::Internal::LOCTreeNodeVisitor<LOCSupportMode::Hitman_BloodMoney>::Visit(root, bufferSize);
+                if (!BM::LOC::Internal::LOCTreeNodeVisitor<LOCSupportMode::Hitman_BloodMoney>::Visit(root, bufferSize))
+                {
+                    delete root;
+                    return nullptr;
+                }
                 return root;
             }
             break;
             case LOCSupportMode::Hitman_Contracts:
             {
                 auto root = LOCTreeFactory::Create();
-                BM::LOC::Internal::LOCTreeNodeVisitor<LOCSupportMode::Hitman_Contracts>::Visit(root, bufferSize);
+                if (!BM::LOC::Internal::LOCTreeNodeVisitor<LOCSupportMode::Hitman_Contracts>::Visit(root, bufferSize))
+                {
+                    delete root;
+                    return nullptr;
+                }
                 return root;
             }
             break;

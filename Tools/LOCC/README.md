@@ -29,10 +29,10 @@ Options:
     * `compile` - Use tool as compiler. `--from` must be path to **LOC** file. `--to` must be path to JSON
     * `decompile` - Use tool as decompiler. ``--from` must be path to **JSON** file. `--to` must be path to LOC
  * `--g`, `--game` - Specify game name. Allowed values: 
-    * `bloodmoney` - Hitman Blood Money LOC format
-    * `contracts` - Hitman Contracts LOC format
-    * `2sa` - Hitman 2 Silent Assassin
-    * `a47` - Hitman Agent 47
+    * `bloodmoney` - Hitman Blood Money LOC format - **supported**
+    * `contracts` - Hitman Contracts LOC format - **in progress**
+    * `2sa` - Hitman 2 Silent Assassin - **queued**
+    * `a47` - Hitman Agent 47 - **queued**
  * `--p`, `--pretty`, `--pretty-json` - Specify JSON pretty printing. Allowed values:
     * `on` - Enable JSON pretty printing
     * `off` - Disable JSON pretty printing (default)
