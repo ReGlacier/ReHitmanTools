@@ -7,3 +7,12 @@
 [submodule "Modules/zlib"]
 	path = Modules/zlib
 	url = https://github.com/madler/zlib
+[submodule "Modules/spdlog"]
+	path = Modules/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "Modules/gtest"]
+	path = Modules/gtest
+	url = https://github.com/google/googletest
+[submodule "Modules/CLI11"]
+	path = Modules/CLI11
+	url = https://github.com/CLIUtils/CLI11.git

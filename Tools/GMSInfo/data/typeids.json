@@ -88,5 +88,12 @@
   "0x10042B":  ["ZHM3ItemWeapon","ZItemWeapon"],
   "0x10042D":  ["ZHM3ItemWeaponCustom","ZHM3ItemWeapon"],
   "0x4000022": ["ZSHAPE","ZGEOM"],
-  "0x1007D3":  ["ZItemTemplate","ZGROUP"]
+  "0x1007D3":  ["ZItemTemplate","ZGROUP"],
+  "0x100450":  ["ZHM3ItemBomb","ZHM3ItemWeapon"],
+  "0x200449":  ["ZHM3Boid","ZIKLNKOBJ"],
+  "0x20044A":  ["ZModifiableCloth","ZSTDOBJ"],
+  "0x200114":  ["ZFadeFullScreen","ZSTDOBJ"],
+  "0x8000F9":  ["ZGateLightSpot","ZSPOTLIGHT"],
+  "0x2000E2":  ["ZParticleBox","ZSTDOBJ"],
+  "0x2000E8":  ["ZCubeGridParticles","ZCubeGrid"]
 }

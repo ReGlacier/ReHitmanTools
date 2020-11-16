@@ -3,6 +3,12 @@ GMSInfo
 
 This tool was created to parse GMS file format
 
+Required
+--------
+ * Visual Studio 2019 (or other compiled with C++20)
+ * CMake 3.16
+ * Python 3.9.0
+
 Build
 -----
 ```
