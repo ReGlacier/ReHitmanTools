@@ -1,7 +1,7 @@
 ReHitman Tools
 --------------
 
-[https://ci.appveyor.com/api/projects/status/github/ReGlacier/ReHitmanTools?branch=main&svg=true](https://ci.appveyor.com/api/projects/status/github/ReGlacier/ReHitmanTools?branch=main&svg=true&retina=true)
+![Build Status of main branch](https://ci.appveyor.com/api/projects/status/github/ReGlacier/ReHitmanTools?branch=main&svg=true&retina=true)
 
 This repository contains utilities for work with files of games who was built on Glacier Engine
 
