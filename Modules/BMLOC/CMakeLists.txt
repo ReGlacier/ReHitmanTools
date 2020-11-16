@@ -9,6 +9,7 @@ add_library(BMFormats::Localization ALIAS BMLOC)
 
 target_compile_definitions(BMLOC PRIVATE -D_CRT_SECURE_NO_WARNINGS=1)
 target_include_directories(BMLOC PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(BMLOC PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/internal/include)
 target_link_libraries(BMLOC PUBLIC nlohmann_json)
 
 # Tests

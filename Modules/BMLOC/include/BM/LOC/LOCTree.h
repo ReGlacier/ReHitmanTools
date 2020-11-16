@@ -10,6 +10,7 @@
 #include <cstdint>
 
 #include <BM/LOC/LOCTypes.h>
+#include <BM/LOC/LOCSupportMode.h>
 
 namespace BM::LOC
 {
@@ -56,7 +57,7 @@ namespace BM::LOC
         [[nodiscard]] bool IsContainer() const;
 
         // Parser
-        static LOCTreeNode* ReadFromMemory(char* buffer, size_t bufferSize);
+        static LOCTreeNode* ReadFromMemory(char* buffer, size_t bufferSize, LOCSupportMode supportMode = LOCSupportMode::Generic);
 
         // Compiler
         using CacheDataBase = std::unordered_map<std::string, std::string>;
@@ -70,12 +71,6 @@ namespace BM::LOC
         static bool Compare(LOCTreeNode* a, LOCTreeNode* b);
 
     private:
-        /**
-         * @fn Visit node by node and extract useful information
-         * @param treeNode pointer to the root node
-         */
-        static void VisitNode(LOCTreeNode* treeNode);
-
         /**
          * @fn SortKeys
          * @brief Should be called after AddChild or RemoveChild!

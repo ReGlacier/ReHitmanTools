@@ -22,8 +22,8 @@ SET(BUILD_SHARED_LIBS OFF)
 
 # Modules
 add_subdirectory(Modules/fmt)
-add_subdirectory(Modules/argh)
 add_subdirectory(Modules/zlib)
+add_subdirectory(Modules/CLI11)
 add_subdirectory(Modules/gtest)
 add_subdirectory(Modules/spdlog)
 add_subdirectory(Modules/minizip)

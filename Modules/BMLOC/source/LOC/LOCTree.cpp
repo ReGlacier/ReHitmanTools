@@ -1,4 +1,6 @@
+#include <BM/LOC/Internal/LOCTreeNodeVisitor.h> // PRIVATE IMPL
 #include <BM/LOC/LOCTreeCompiler.h>
+#include <BM/LOC/LOCTreeFactory.h>
 #include <BM/LOC/LOCTree.h>
 
 #include <algorithm>
@@ -108,11 +110,30 @@ namespace BM::LOC
         std::sort(std::begin(children), std::end(children), SortPred);
     }
 
-    LOCTreeNode* LOCTreeNode::ReadFromMemory(char* buffer, size_t bufferSize)
+    LOCTreeNode* LOCTreeNode::ReadFromMemory(char* buffer, size_t bufferSize, LOCSupportMode supportMode)
     {
-        auto root = new LOCTreeNode(nullptr, buffer);
-        LOCTreeNode::VisitNode(root);
-        return root;
+        switch (supportMode)
+        {
+            case LOCSupportMode::Hitman_BloodMoney:
+            {
+                auto root = new LOCTreeNode(nullptr, buffer);
+                BM::LOC::Internal::LOCTreeNodeVisitor<LOCSupportMode::Hitman_BloodMoney>::Visit(root, bufferSize);
+                return root;
+            }
+            break;
+            case LOCSupportMode::Hitman_Contracts:
+            {
+                auto root = LOCTreeFactory::Create();
+                BM::LOC::Internal::LOCTreeNodeVisitor<LOCSupportMode::Hitman_Contracts>::Visit(root, bufferSize);
+                return root;
+            }
+            break;
+            // ---< NOT SUPPORTED YET >---
+            case LOCSupportMode::Hitman_2SA:
+            case LOCSupportMode::Hitman_A47:
+            default:
+                return nullptr;
+        }
     }
 
     static void VisitAndMarkNode(LOCTreeNode* node, LOCTreeNode::CacheDataBase& cache, const std::string& currentKey) // NOLINT(misc-no-recursion)
@@ -244,64 +265,5 @@ namespace BM::LOC
             }
         }
         return true;
-    }
-
-    void LOCTreeNode::VisitNode(LOCTreeNode* treeNode)
-    {
-        if (treeNode->parent)
-        {
-            treeNode->nodeType = static_cast<TreeNodeType>(treeNode->currentBufferPtr[0]);
-            treeNode->currentBufferPtr = (char*)&treeNode->currentBufferPtr[1]; // Move caret if we not a root
-        }
-        else
-        {
-            treeNode->nodeType = TreeNodeType::NODE_WITH_CHILDREN; // Root always contains children nodes, no data inside
-        }
-
-        const bool isOkNode = treeNode->IsData() || treeNode->IsContainer();
-        if (!isOkNode)
-        {
-            treeNode->originalTypeRawData = static_cast<uint8_t>(treeNode->nodeType);
-            treeNode->nodeType = TreeNodeType::VALUE_OR_DATA; // We can override type because we save that before this.
-        }
-
-        if (treeNode->IsData())
-        {
-            //Determine which format should be used for it (string or bytes array? for bytes array we should know length)
-            //FIXME
-            if (treeNode->currentBufferPtr)
-            {
-                treeNode->value = treeNode->currentBufferPtr;
-            }
-            return; // Do not look for any child here
-        }
-
-        auto countOfChildNodes = static_cast<uint8_t>(*treeNode->currentBufferPtr);
-        if (countOfChildNodes == 0)
-            return; // Orphaned or broken node, not interested for us
-
-        char* offsetsPtr = (char*)&treeNode->currentBufferPtr[1];
-        std::vector<uint32_t> offsets;
-        offsets.reserve(countOfChildNodes);
-
-        offsets.push_back(0); // Always our first entity located at +0x0, other located on their own offsets
-        for (int i = 1; i < countOfChildNodes; i++)
-        {
-            offsets.push_back(*reinterpret_cast<uint32_t*>(&offsetsPtr[0]));
-            offsetsPtr += sizeof(uint32_t);
-        }
-
-        treeNode->numChild = static_cast<uint8_t>(countOfChildNodes);
-
-        char* baseAddr = treeNode->currentBufferPtr + (sizeof(uint32_t) * (countOfChildNodes - 1)) + 1;
-
-        for (const auto& offset : offsets)
-        {
-            std::string_view name { baseAddr + offset };
-            auto child = new LOCTreeNode(treeNode, baseAddr + offset + name.length() + 1);
-            child->name = name;
-            treeNode->AddChild(child);
-            LOCTreeNode::VisitNode(child);
-        }
     }
 }

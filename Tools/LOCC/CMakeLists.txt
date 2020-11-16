@@ -10,7 +10,7 @@ endif()
 file(GLOB_RECURSE LOCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/source/*.cpp)
 add_executable(LOCC ${LOCC_SOURCES})
 
-target_link_libraries(LOCC PRIVATE nlohmann_json zlibstatic argh minizip BMFormats::Localization)
+target_link_libraries(LOCC PRIVATE nlohmann_json zlibstatic CLI11::CLI11 minizip BMFormats::Localization)
 target_link_libraries(LOCC PUBLIC spdlog)
 
 target_compile_definitions(LOCC PRIVATE -D_CRT_SECURE_NO_WARNINGS=1)

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <BM/LOC/LOCTree.h>
+#include <BM/LOC/LOCSupportMode.h>
 
 #include <vector>
 
@@ -13,7 +14,7 @@ namespace BM::LOC
     public:
         using Buffer = std::vector<uint8_t>;
 
-        static bool Compile(Buffer& buffer, LOCTreeNode* rootNode);
+        static bool Compile(Buffer& buffer, LOCTreeNode* rootNode, LOCSupportMode supportMode = LOCSupportMode::Generic);
         static void MarkupTree(LOCTreeNode* rootNode);
     };
 }
