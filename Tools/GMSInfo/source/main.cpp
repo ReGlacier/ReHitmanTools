@@ -8,12 +8,15 @@
 #include <TypesDataBase.h>
 #include <LevelDescription.h>
 
+// CLI11
+#include <CLI/App.hpp>
+#include <CLI/Formatter.hpp>
+#include <CLI/Config.hpp>
+
 static constexpr const char* kDefaultTypeStorageFile = "typeids.json";
 
 int main(int argc, char** argv)
 {
-    /*argh::parser cli(argc, argv);
-
     bool printLevelInfo;
     bool ignoreGMS { false };
     bool ignoreANM { false };
@@ -24,29 +27,25 @@ int main(int argc, char** argv)
     bool ignoreSND { false };
 
     std::string levelArchivePath;
-    std::string typesDataBaseFilePath;
+    std::string typesDataBaseFilePath = kDefaultTypeStorageFile;
     std::string uncompressedGMSPath;
     std::string exportLocalizationToFilePath;
 
-    if (!(cli({"-L", "\"--level\""}) >> levelArchivePath))
-    {
-        spdlog::error("You must present path to the level archive!");
-        return -1;
-    }
+    CLI::App app { "GMS Tool" };
 
-    cli("--types", kDefaultTypeStorageFile) >> typesDataBaseFilePath;
-    cli("--export-gms", "") >> uncompressedGMSPath;
-    cli("--print-info", false) >> printLevelInfo;
-    cli("--export-loc", "") >> exportLocalizationToFilePath;
-
-    // 'Ignore' flags
-    cli("--ignore-gms", false) >> ignoreGMS;
-    cli("--ignore-anm", false) >> ignoreANM;
-    cli("--ignore-loc", false) >> ignoreLOC;
-    cli("--ignore-prm", false) >> ignorePRM;
-    cli("--ignore-prp", false) >> ignorePRP;
-    cli("--ignore-tex", false) >> ignoreTEX;
-    cli("--ignore-snd", false) >> ignoreSND;
+    app.add_option("--level", levelArchivePath, "Path to level ZIP")->required();
+    app.add_option("--types", typesDataBaseFilePath, "Set types DB JSON file");
+    app.add_option("--export-gms", uncompressedGMSPath, "Export uncompressed GMS to specified file");
+    app.add_option("--print-info", printLevelInfo, "Dump level info to console");
+    app.add_option("--export-loc", exportLocalizationToFilePath, "Export decompiled LOC file into file at specified path");
+    app.add_option("--ignore-gms", ignoreGMS, "Ignore .GMS file");
+    app.add_option("--ignore-anm", ignoreANM, "Ignore .ANM file");
+    app.add_option("--ignore-loc", ignoreLOC, "Ignore .LOC file");
+    app.add_option("--ignore-prm", ignorePRM, "Ignore .PRM file");
+    app.add_option("--ignore-prp", ignorePRP, "Ignore .PRP file");
+    app.add_option("--ignore-tex", ignoreTEX, "Ignore .TEX file");
+    app.add_option("--ignore-snd", ignoreSND, "Ignore .SND file");
+    CLI11_PARSE(app, argc, argv);
 
     if (!ReGlacier::TypesDataBase::GetInstance().Load(typesDataBaseFilePath))
     {
@@ -98,6 +97,6 @@ int main(int argc, char** argv)
             }
         }
     }
-    */
+
     return 0;
 }
