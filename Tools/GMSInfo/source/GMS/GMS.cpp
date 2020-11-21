@@ -160,16 +160,6 @@ namespace ReGlacier
 
     void GMS::PrintInfo() {
         {
-            auto& db = TypesDataBase::GetInstance();
-
-            spdlog::info("GMS Linking table (total {})", m_linkRefs.size());
-            for (const auto& linkRef : m_linkRefs)
-            {
-                spdlog::info("#{:06d} as {}", linkRef.index, db.GetEntityTypeById(linkRef.typeInfo.index));
-            }
-        }
-
-        {
             if (!m_excludedAnimationsList.empty())
             {
                 spdlog::info("GMS| Excluded animations");
@@ -199,6 +189,15 @@ namespace ReGlacier
             else
             {
                 spdlog::info("GMS::LoadWeaponHandles| No weapon handles declared there. Probably, you work with LoaderSequence.GMS");
+            }
+        }
+
+        {
+            spdlog::info("GMS Geoms: ");
+            spdlog::info("   ID   |  Type Name  | Type ID ");
+            for (const auto& geom : m_geoms)
+            {
+                spdlog::info("{:08X} {} {:X}", geom.PrimitiveId, Glacier::GetTypeIdAsString(geom.TypeId), geom.TypeId);
             }
         }
     }
@@ -247,7 +246,7 @@ namespace ReGlacier
         return importTablesOk || propertiesOk || excludedAnimsOk || weaponsHandlesOk;
     }
 
-    bool GMS::LoadImportTable(const char* buffer, size_t bufferSize)
+    bool GMS::isc(const char* buffer, size_t bufferSize)
     {
         if (*(int*)buffer > bufferSize) {
             return false;
@@ -394,7 +393,7 @@ namespace ReGlacier
         gms.field_8 = *(unsigned int*)(raw + 4);
         gms.field_14 = (*(unsigned char*)(raw + 8)) != 0;
 
-        outBufferSize = (v5 + 15) & 0xFFFFFFF0; ///GOT WRONG SIZE
+        outBufferSize = (v5 + 15) & 0xFFFFFFF0;
 
         auto outBuffer = std::make_unique<uint8_t[]>(outBufferSize);
         Legacy::GMS_Decompress(&gms, outBuffer.get(), outBufferSize);

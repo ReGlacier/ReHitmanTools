@@ -252,5 +252,8 @@ namespace ReGlacier
 
         uint32_t ReadUInt32() const override;
         int32_t ReadInt32() const override;
+
+        // Custom
+        std::string ReadZString(int limit = 1024) const;
     };
 }

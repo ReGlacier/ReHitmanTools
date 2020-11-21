@@ -29,5 +29,7 @@ namespace ReGlacier
         }
 
         virtual bool Load() = 0;
+
+        virtual void PrintInfo() {}
     };
 }

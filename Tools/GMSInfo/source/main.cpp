@@ -17,7 +17,7 @@ static constexpr const char* kDefaultTypeStorageFile = "typeids.json";
 
 int main(int argc, char** argv)
 {
-    bool printLevelInfo;
+    bool printLevelInfo { false };
     bool ignoreGMS { false };
     bool ignoreANM { false };
     bool ignoreLOC { false };

@@ -262,4 +262,25 @@ namespace ReGlacier
         m_offset += sizeof(int32_t);
         return *((int32_t*)ptr);
     }
+
+    std::string BinaryWalker::ReadZString(int limit) const
+    {
+        std::string str;
+
+        uint8_t ch = 0;
+        size_t it = 0;
+
+        do {
+            ch = ReadUInt8();
+
+            if (ch != 0)
+            {
+                str.push_back(ch);
+            }
+
+            ++it;
+        } while (ch != 0 && it < limit);
+
+        return str;
+    }
 }

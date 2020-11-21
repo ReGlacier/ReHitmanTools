@@ -29,7 +29,7 @@ namespace ReGlacier
 
         bool Load() override;
         bool SaveUncompressed(const std::string& filePath);
-        void PrintInfo();
+        void PrintInfo() override;
 
         [[nodiscard]] const std::vector<std::string>& GetExcludedAnimations() const;
         [[nodiscard]] const std::vector<GMSLinkRef>& GetLinkReferences() const;

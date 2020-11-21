@@ -7,6 +7,7 @@
 #include <ANM/ANM.h>
 #include <GMS/GMS.h>
 #include <PRM/PRM.h>
+#include <PRP/PRP.h>
 #include <TEX/TEX.h>
 #include <SND/SND.h>
 #include <LOC/LOC.h>
@@ -43,6 +44,7 @@ namespace ReGlacier
         ANM::Ptr ANMInstance;
         GMS::Ptr GMSInstance;
         PRM::Ptr PRMInstance;
+        PRP::Ptr PRPInstance;
         TEX::Ptr TEXInstance;
         SND::Ptr SNDInstance;
         LOC::Ptr LOCInstance;
@@ -128,6 +130,13 @@ namespace ReGlacier
             }
         } else spdlog::info(" * LOC ignored by user");
 
+        if (!m_context->Flags[IgnoreFlags::IgnorePRP]) {
+            m_context->PRPInstance = GameEntityFactory::Create<PRP>(m_context->Assets.PRP, m_context);
+            if (!m_context->PRPInstance->Load()) {
+                spdlog::error("LevelDescription::Analyze| Failed to load PRM to analyze!");
+            }
+        } else spdlog::info(" * PRP ignored by user");
+
         if (!m_context->Flags[IgnoreFlags::IgnoreANM]) {
             m_context->ANMInstance = GameEntityFactory::Create<ANM>(m_context->Assets.ANM, m_context);
             if (!m_context->ANMInstance->Load()) {
@@ -168,10 +177,13 @@ namespace ReGlacier
     {
         if (m_context)
         {
-            if (m_context->GMSInstance)
-            {
-                m_context->GMSInstance->PrintInfo();
-            }
+            if (m_context->ANMInstance) m_context->ANMInstance->PrintInfo();
+            if (m_context->GMSInstance) m_context->GMSInstance->PrintInfo();
+            if (m_context->PRMInstance) m_context->PRMInstance->PrintInfo();
+            if (m_context->PRPInstance) m_context->PRPInstance->PrintInfo();
+            if (m_context->TEXInstance) m_context->TEXInstance->PrintInfo();
+            if (m_context->SNDInstance) m_context->SNDInstance->PrintInfo();
+            if (m_context->LOCInstance) m_context->LOCInstance->PrintInfo();
         }
     }
 
