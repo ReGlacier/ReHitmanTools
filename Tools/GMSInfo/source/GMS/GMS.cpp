@@ -246,7 +246,7 @@ namespace ReGlacier
         return importTablesOk || propertiesOk || excludedAnimsOk || weaponsHandlesOk;
     }
 
-    bool GMS::isc(const char* buffer, size_t bufferSize)
+    bool GMS::LoadImportTable(const char* buffer, size_t bufferSize)
     {
         if (*(int*)buffer > bufferSize) {
             return false;
