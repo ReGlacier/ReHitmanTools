@@ -45,6 +45,6 @@ namespace ReGlacier
     private:
         int32_t m_totalEntities;
 
-        std::vector<SGMSBaseGeom> m_geoms;
+        std::vector<GMSComposedInfoHolder> m_geoms;
     };
 }

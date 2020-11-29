@@ -49,20 +49,20 @@ namespace ReGlacier
     struct SGMSUncompressedHeader
     {
         uint32_t TotalEntitiesCountPos; //0x0
-        uint32_t Unknown1;  //0x4
-        uint32_t Unknown2;  //0x8
-        uint32_t Unknown3;  //0xC
+        uint32_t Unknown4;  //0x4
+        uint32_t Unknown8;  //0x8
+        uint32_t UnknownC;  //0xC
         uint32_t DataPos;   //0x10
-        uint32_t Unknown5;  //0x14
-        uint32_t Unknown6;  //0x18
-        uint32_t Unknown7;  //0x1C
-        uint32_t Unknown8;  //0x20
-        uint32_t Unknown9;  //0x24
-        uint32_t Unknown10; //0x28
-        uint32_t Unknown11; //0x2C
-        uint32_t Unknown12; //0x30
-        uint32_t Unknown13; //0x34
-        uint32_t Unknown14; //0x38
+        uint32_t Unknown14;  //0x14
+        uint32_t Unknown18;  //0x18
+        uint32_t Unknown1C;  //0x1C
+        uint32_t Unknown20;  //0x20
+        uint32_t Unknown24;  //0x24
+        uint32_t Unknown28; //0x28
+        uint32_t Unknown2C; //0x2C
+        uint32_t Unknown30; //0x30
+        uint32_t Unknown34; //0x34
+        uint32_t Unknown38; //0x38
         uint32_t BaseGeomsCount; //0x3C
     };
 
@@ -74,13 +74,28 @@ namespace ReGlacier
 
     struct SGMSBaseGeom
     {
-        uint32_t PrimitiveId; //+0x0
-        uint32_t Unknown2; //+0x4
-        uint32_t Unknown3; //+0x8
-        uint32_t PrimitiveOffset; //+0xC
-        uint32_t Unknown5; //+0x10
+        uint32_t PrimitiveBufGroupNameOffset; //+0x0
+        uint32_t Unknown4; //+0x4
+        uint32_t Unknown8; //+0x8
+        uint32_t UnknownC; //+0xC
+        uint32_t Unknown10; //+0x10
         Glacier::TypeId TypeId; //+0x14
-        uint32_t Unknown7; //+0x16
-        uint32_t Unknown8; //+0x18
+        uint32_t Unknown18; //+0x18
+        uint32_t Unknown1C; //+0x1C
+        uint32_t PRMOffset; //+0x20
+        uint32_t Unknown24; //+0x24
+        uint32_t Unknown28; //+0x28;
+        uint32_t Unknown2C; //+0x2C
+        uint32_t Unknown30; //+0x30
+        uint32_t Unknown34; //+0x34
+        uint32_t Unknown38; //+0x38
+        uint32_t Unknown3C; //+0x3C
+    };
+
+    struct GMSComposedInfoHolder
+    {
+        int id;
+        SGMSBaseGeom baseGeom;
+        std::string  groupName;
     };
 }

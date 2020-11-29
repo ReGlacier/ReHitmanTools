@@ -15,6 +15,7 @@
 #include <utility>
 #include <fstream>
 #include <numeric>
+#include <set>
 
 extern "C" {
 #include <zlib.h>
@@ -104,15 +105,27 @@ namespace ReGlacier
             return false;
         }
 
+        size_t bufBufferSize = 0;
+        auto bufBuffer = m_container->Read(m_assets->BUF, bufBufferSize);
+        if (!bufBuffer)
+        {
+            spdlog::error("GMS::Load| Failed to load BUF {}", m_assets->BUF);
+            return false;
+        }
+
         BinaryWalker gmsBinaryWalker(gmsBuffer.get(), gmsBufferSize);
         BinaryWalker prmBinaryWalker(prmBuffer.get(), prmBufferSize);
+        BinaryWalker bufBinaryWalker(bufBuffer.get(), bufBufferSize);
 
         SGMSUncompressedHeader header {};
         BinaryWalkerADL<SGMSUncompressedHeader>::Read(gmsBinaryWalker, header);
 
+        spdlog::info("TotalEntitiesCountPos: {:X}", header.TotalEntitiesCountPos);
+
         gmsBinaryWalker.Seek(header.TotalEntitiesCountPos, BinaryWalker::SeekType::FROM_BEGIN);
         m_totalEntities = gmsBinaryWalker.Read<int32_t>();
-        spdlog::info("GMS total entities: {}", m_totalEntities);
+
+        spdlog::info("At TECP: +{:X}", gmsBinaryWalker.GetPosition());
 
         m_geoms.reserve(m_totalEntities);
 
@@ -124,8 +137,13 @@ namespace ReGlacier
 
             gmsBinaryWalker.Seek(4 * (entry.TypeInfoPos & 0xFFFFFF), BinaryWalker::SeekType::FROM_BEGIN); //& 0xFFFFFF IT'S VERY IMPORTANT!!!
 
-            auto& baseGeom = m_geoms.emplace_back();
-            BinaryWalkerADL<SGMSBaseGeom>::Read(gmsBinaryWalker, baseGeom);
+            auto& info = m_geoms.emplace_back();
+            info.id = entryId;
+
+            BinaryWalkerADL<SGMSBaseGeom>::Read(gmsBinaryWalker, info.baseGeom);
+
+            bufBinaryWalker.Seek(info.baseGeom.PrimitiveBufGroupNameOffset, BinaryWalker::BEGIN);
+            BinaryWalkerADL<std::string>::Read(bufBinaryWalker, info.groupName);
         }
 
         m_isLoaded = true;
@@ -194,10 +212,10 @@ namespace ReGlacier
 
         {
             spdlog::info("GMS Geoms: ");
-            spdlog::info("   ID   |  Type Name  | Type ID ");
+            spdlog::info("    ID   |            Entity Name            |        Type Name        |    Type ID    ");
             for (const auto& geom : m_geoms)
             {
-                spdlog::info("{:08X} {} {:X}", geom.PrimitiveId, Glacier::GetTypeIdAsString(geom.TypeId), geom.TypeId);
+                spdlog::info("{:08X} {:33} {:23} {:8X}", geom.id, geom.groupName, Glacier::GetTypeIdAsString(geom.baseGeom.TypeId), geom.baseGeom.TypeId);
             }
         }
     }
