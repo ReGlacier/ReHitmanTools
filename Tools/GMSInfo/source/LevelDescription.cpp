@@ -228,6 +228,42 @@ namespace ReGlacier
         return m_context->LOCInstance->SaveAsJson(path);
     }
 
+    bool LevelDescription::GenerateGMSWithUncompressedBody(std::string_view path)
+    {
+#pragma pack(push, 1)
+        /**
+         * SGMS Header format
+         *
+         * +0x0 - uncompressed size
+         * +0x4 - buffer size (for zip)
+         * +0x8 - is compressed flag
+         */
+        struct SGMSHeader_t
+        {
+            unsigned int iUncompressedSize { 0 };
+            unsigned int iBufferSize { 0 };
+            bool bIsUncompressed : 1 { false };
+        };
+#pragma pack(pop)
+
+        SGMSHeader_t header { 0 };
+        auto buffer = m_context->GMSInstance->GetUncompressedBuffer(header.iUncompressedSize);
+        header.iBufferSize = header.iUncompressedSize;
+        header.bIsUncompressed = true;
+
+        FILE* fp = fopen(path.data(), "wb");
+        if (!fp) {
+            spdlog::error("LevelDescription::GenerateGMSUncompressedBody| Failed to open file {}", path);
+            return false;
+        }
+
+        fwrite(&header, sizeof(SGMSHeader_t), 1, fp);
+        fwrite(buffer.get(), sizeof(uint8_t), header.iUncompressedSize, fp);
+        fclose(fp);
+
+        return true;
+    }
+
     void LevelDescription::SetIgnoreGMSFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreGMS] = flag; }
     void LevelDescription::SetIgnoreANMFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreANM] = flag; }
     void LevelDescription::SetIgnoreLOCFlag(bool flag) { m_context->Flags[IgnoreFlags::IgnoreLOC] = flag; }

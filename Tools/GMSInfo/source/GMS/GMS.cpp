@@ -230,6 +230,11 @@ namespace ReGlacier
         return m_linkRefs;
     }
 
+    std::unique_ptr<uint8_t[]> GMS::GetUncompressedBuffer(unsigned int& uncompressedSize)
+    {
+        return GetRawGMS(uncompressedSize);
+    }
+
     bool GMS::LoadEntities(std::unique_ptr<char[]>&& gmsBuffer, size_t bufferSize)
     {
         std::unique_ptr<char[]> data = std::move(gmsBuffer);

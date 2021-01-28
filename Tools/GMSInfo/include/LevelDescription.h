@@ -20,6 +20,7 @@ namespace ReGlacier
         void PrintInfo();
         void ExportUncompressedGMS(const std::string& path);
         bool ExportLocalizationToJson(std::string_view path);
+        bool GenerateGMSWithUncompressedBody(std::string_view path);
 
         void SetIgnoreGMSFlag(bool flag);
         void SetIgnoreANMFlag(bool flag);

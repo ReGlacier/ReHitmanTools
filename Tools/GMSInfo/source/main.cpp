@@ -30,6 +30,7 @@ int main(int argc, char** argv)
     std::string typesDataBaseFilePath = kDefaultTypeStorageFile;
     std::string uncompressedGMSPath;
     std::string exportLocalizationToFilePath;
+    std::string generateUncompressedGMSPath;
 
     CLI::App app { "GMS Tool" };
 
@@ -45,6 +46,7 @@ int main(int argc, char** argv)
     app.add_option("--ignore-prp", ignorePRP, "Ignore .PRP file");
     app.add_option("--ignore-tex", ignoreTEX, "Ignore .TEX file");
     app.add_option("--ignore-snd", ignoreSND, "Ignore .SND file");
+    app.add_option("--generate-uncompressed-gms", generateUncompressedGMSPath, "Generate GMS with uncompressed body");
     CLI11_PARSE(app, argc, argv);
 
     if (!ReGlacier::TypesDataBase::GetInstance().Load(typesDataBaseFilePath))
@@ -79,7 +81,9 @@ int main(int argc, char** argv)
         level->PrintInfo();
 
     if (!uncompressedGMSPath.empty())
+    {
         level->ExportUncompressedGMS(uncompressedGMSPath);
+    }
 
     if (!exportLocalizationToFilePath.empty())
     {
@@ -95,6 +99,15 @@ int main(int argc, char** argv)
             } else {
                 spdlog::error("Failed to export localization contents. More details in log.");
             }
+        }
+    }
+
+    if (!generateUncompressedGMSPath.empty())
+    {
+        if (!level->GenerateGMSWithUncompressedBody(generateUncompressedGMSPath)) {
+            spdlog::error("Failed to generate uncompressed GMS. See logs for defails");
+        } else {
+            spdlog::info("Uncompressed GMS was saved into file {}", generateUncompressedGMSPath);
         }
     }
 

@@ -33,6 +33,8 @@ namespace ReGlacier
 
         [[nodiscard]] const std::vector<std::string>& GetExcludedAnimations() const;
         [[nodiscard]] const std::vector<GMSLinkRef>& GetLinkReferences() const;
+
+        [[nodiscard]] std::unique_ptr<uint8_t[]> GetUncompressedBuffer(unsigned int& uncompressedSize);
     private:
         bool LoadEntities(std::unique_ptr<char[]>&& buffer, size_t bufferSize);
         bool LoadImportTable(const char* gmsBuffer, size_t bufferSize);
