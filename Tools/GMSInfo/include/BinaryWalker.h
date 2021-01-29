@@ -29,6 +29,7 @@ namespace ReGlacier
 
     public:
         virtual ~IBaseStreamWalker() noexcept = default;
+        IBaseStreamWalker() = default;
         IBaseStreamWalker(size_t size, size_t offset);
 
         IBaseStreamWalker(const IBaseStreamWalker& copy);
@@ -104,9 +105,10 @@ namespace ReGlacier
     class BinaryWalker final : public IBaseStreamWalker
     {
     private:
-        uint8_t* m_buffer;
+        uint8_t* m_buffer { nullptr };
 
     public:
+        BinaryWalker() = default;
         BinaryWalker(uint8_t* buffer, size_t size);
 
         BinaryWalker(const BinaryWalker& copy) noexcept;
@@ -184,9 +186,10 @@ namespace ReGlacier
             if (!m_buffer || m_offset + sizeof(T) * size >= m_size)
                 throw std::out_of_range { "Unable to read buffer. Not enough bytes" };
 
-            std::memcpy(buffer, m_buffer + (sizeof(T) * size), size);
+            const size_t offset = sizeof(T) * size;
+            std::memcpy(buffer, m_buffer + m_offset, offset);
 
-            m_offset += (sizeof(T) * size);
+            m_offset += offset;
         }
 
         /**

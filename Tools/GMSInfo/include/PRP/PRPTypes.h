@@ -5,6 +5,20 @@
 
 namespace ReGlacier
 {
+#pragma pack(push, 1)
+    struct SPRP
+    {
+        static constexpr size_t kMagicSize = 0xE;
+
+        char magic[kMagicSize];     //0x0
+        bool bIsRaw;                //0xE
+        uint32_t bFlags;            //0xF
+        uint32_t __Unknown__;       //0x13;
+        uint32_t totalKeysCount;    //0x17
+        uint32_t dataOffset;        //0x1B
+    };
+#pragma pack(pop)
+
     enum PRP_ETag : uint8_t
     {
         TAG_Array               = 0x1,
