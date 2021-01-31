@@ -46,7 +46,7 @@ namespace ReGlacier
     {
     }
 
-    void PRPWalker::Prepare(IPRPVisitor* visitor, LevelContainer* pLevelContainer, LevelAssets* pAssets)
+    void PRPWalker::Prepare(IPRPVisitor* visitor)
     {
         if (!visitor) {
             assert(visitor != nullptr);
@@ -101,8 +101,7 @@ namespace ReGlacier
         m_zDefines.clear();
 
         LoadZDefines(visitor);
-        LoadProperties(visitor, pLevelContainer, pAssets);
-        spdlog::info("DBG");
+        LoadProperties(visitor);
     }
 
     bool PRPWalker::LoadZDefines(IPRPVisitor* visitor)
@@ -501,20 +500,8 @@ namespace ReGlacier
         }
     };
 
-    bool PRPWalker::LoadProperties(IPRPVisitor* visitor, LevelContainer* pLevel, LevelAssets* pAssets)
+    bool PRPWalker::LoadProperties(IPRPVisitor* visitor)
     {
-        /**
-         * @note this is test code, please refactor this
-         * @todo REFACTOR THIS LATER
-         */
-        auto gms = std::make_unique<GMS>(pAssets->GMS, pLevel, pAssets);
-        if (!gms->Load())
-        {
-            spdlog::error("PRPWalker| Failed to load properties (unable to load GMS)");
-            return false;
-        }
-
-        auto geoms = gms->GetGeoms();
         PRPWalkController controller {};
 
         do {

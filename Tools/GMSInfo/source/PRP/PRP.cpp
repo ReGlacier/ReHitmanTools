@@ -119,7 +119,7 @@ namespace ReGlacier
 
         IPRPVisitor visitor {};
         PRPWalker walker { std::move(prpBuffer), prpBufferSize };
-        walker.Prepare(&visitor, m_container, m_assets);
+        walker.Prepare(&visitor);
 
 //        BinaryWalker binaryWalker { prpBuffer.get(), prpBufferSize };
 //

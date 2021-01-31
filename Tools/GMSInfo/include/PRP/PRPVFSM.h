@@ -16,9 +16,6 @@
 
 namespace ReGlacier
 {
-    class LevelContainer;
-    class LevelAssets;
-
     class IPRPVisitor;
     using PRPToken = uint32_t;
 
@@ -85,11 +82,11 @@ namespace ReGlacier
         [[nodiscard]] bool HasErrors() const { return m_flags & Flags::ERROR_IN_STREAM; }
         [[nodiscard]] uint32_t GetHeaderBFlags() const { return m_header.bFlags; }
 
-        void Prepare(IPRPVisitor* visitor, LevelContainer* pLevel, LevelAssets* pAssets);
+        void Prepare(IPRPVisitor* visitor);
 
     private:
         bool LoadZDefines(IPRPVisitor* visitor);
-        bool LoadProperties(IPRPVisitor* visitor, LevelContainer* pLevel, LevelAssets* pAssets);
+        bool LoadProperties(IPRPVisitor* visitor);
 
     private:
         uint8_t GetCurrentByte() const;
