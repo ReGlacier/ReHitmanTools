@@ -123,6 +123,7 @@ namespace ReGlacier
         virtual void Visit_F64(PRPWalker* walker, PRPToken token, double& result);
         virtual void Visit_String(PRPWalker* walker, PRPToken token, std::string& result);
         virtual void Visit_RawBuffer(PRPWalker* walker, PRPToken token, std::shared_ptr<uint8_t[]>& buffer, size_t& bufferSize);
+        virtual void Visit_RawContents(PRPWalker* walker, PRPToken token, char* buffer, size_t bufferSize);
 
         virtual void Visit_EndOfStream(PRPWalker* walker);
 

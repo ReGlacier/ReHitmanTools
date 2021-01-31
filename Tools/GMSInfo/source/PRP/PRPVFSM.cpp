@@ -80,11 +80,15 @@ namespace ReGlacier
         m_tokenTable.reserve(m_header.totalKeysCount);
 
         int tokenIndex = 0;
-        while (tokenIndex < m_header.totalKeysCount)
+        while (tokenIndex <= m_header.totalKeysCount)
         {
             std::string token;
             BinaryWalkerADL<std::string>::Read(m_walker, token);
-            if (token.empty()) continue;
+            /**
+             * @brief We should save each available token.
+             *        Empty tokens are valid too.
+             *        Ref to ZTokenTable_Serializerlib::Load
+             */
 
             m_tokenTable.emplace_back(std::move(token));
             ++tokenIndex;
@@ -275,7 +279,6 @@ namespace ReGlacier
                 case TAG_NamedReference:
                 case TAG_Reference:
                     spdlog::info("[OP| +{:0X}] Reference (opcode {:2X})", offset, byte);
-                    assert(false);
                     break;
                 case TAG_Char:
                 case TAG_NamedChar:
@@ -514,22 +517,10 @@ namespace ReGlacier
         auto geoms = gms->GetGeoms();
         PRPWalkController controller {};
 
-        for (const auto& currentGeom : geoms)
-        {
-            spdlog::info("Processing properties for geom {} ({:0X})", currentGeom.groupName, currentGeom.id);
-            do
-            {
-                controller.OnByte(this, m_walker.ReadUInt8());
-            }
-            while ((controller.IsInContainer() || controller.IsInObject() || controller.IsInArray()) && !controller.IsEndOfStream() && !controller.IsError());
-
+        do {
             assert(!controller.IsError());
-
-            if (controller.IsEndOfStream())
-                break;
-
-            controller.Reset();
-        }
+            controller.OnByte(this, m_walker.ReadUInt8());
+        } while (!controller.IsEndOfStream());
 
         return true;
     }
@@ -614,13 +605,28 @@ namespace ReGlacier
 
     void IPRPVisitor::Visit_String(PRPWalker* walker, PRPToken token, std::string& result)
     {
-        const uint32_t index = walker->m_walker.ReadUInt32();
-        if (index > walker->m_tokenTable.size()) {
-            spdlog::error("IPRPVisitor::Visit_String| Index of string is out of bounds! Index is {:8X}", index);
-            return;
-        }
+        if (((walker->GetHeaderBFlags() >> 3) & 1) == 0) {
+            uint32_t length { 0 };
+            Visit_I32(walker, token, length);
 
-        result = walker->m_tokenTable[index];
+            assert(length > 0);
+
+            result.resize(length + 1);
+            result[length] = 0x0;
+
+            Visit_RawContents(walker, token, result.data(), length);
+        }
+        else
+        {
+            const uint32_t index = walker->m_walker.ReadUInt32();
+            if (index >= walker->m_tokenTable.size()) {
+                spdlog::error("IPRPVisitor::Visit_String| Index of string is out of bounds! Index is {:8X}", index);
+                assert(false);
+                return;
+            }
+
+            result = walker->m_tokenTable[index];
+        }
     }
 
     void IPRPVisitor::Visit_RawBuffer(PRPWalker* walker,
@@ -636,6 +642,12 @@ namespace ReGlacier
             buffer = std::make_shared<uint8_t[]>(size);
             walker->m_walker.ReadArray(buffer.get(), bufferSize);
         }
+    }
+
+    void IPRPVisitor::Visit_RawContents(PRPWalker* walker, PRPToken token, char* buffer, size_t bufferSize)
+    {
+        assert(bufferSize > 0);
+        walker->m_walker.ReadArray(buffer, bufferSize);
     }
 
     void IPRPVisitor::Visit_EndOfStream(PRPWalker* walker)
