@@ -32,7 +32,11 @@ namespace ReGlacier
             return PRP_ETag::NO_TAG;
         }
 
-        if (byte == 14 || byte == 128 || byte == 142 || (byte >= 16 && byte <= 123))
+        if (byte == 0x0E) return PRP_ETag::TAG_StringOrArray_E;
+        if (byte == 0x8E) return PRP_ETag::TAG_StringOrArray_8E;
+        if (byte == 0x0F) return PRP_ETag::TAG_StringArray;
+
+        if (byte == 128 || (byte >= 16 && byte <= 123))
         {
             return PRP_ETag::TAG_UNKNOWN;
         }
@@ -113,11 +117,9 @@ namespace ReGlacier
             return false;
         }
 
-        IPRPVisitor* visitor = new IPRPVisitor();
+        IPRPVisitor visitor {};
         PRPWalker walker { std::move(prpBuffer), prpBufferSize };
-        walker.Prepare(visitor);
-
-        delete visitor;
+        walker.Prepare(&visitor, m_container, m_assets);
 
 //        BinaryWalker binaryWalker { prpBuffer.get(), prpBufferSize };
 //

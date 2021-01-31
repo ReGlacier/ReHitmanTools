@@ -1,8 +1,18 @@
-#include <PRP/PRPVFSM.h>
-#include <spdlog/spdlog.h>
 #include <cassert>
+#include <sstream>
+#include <iomanip>
 #include <string_view>
+
+#include <spdlog/spdlog.h>
+
+#include <GMS/GMSTypes.h>
+#include <GMS/GMS.h>
+
+#include <PRP/PRPVFSM.h>
+
 #include <BinaryWalkerADL.h>
+#include <LevelContainer.h>
+#include <LevelAssets.h>
 
 namespace ReGlacier
 {
@@ -36,7 +46,7 @@ namespace ReGlacier
     {
     }
 
-    void PRPWalker::Prepare(IPRPVisitor* visitor)
+    void PRPWalker::Prepare(IPRPVisitor* visitor, LevelContainer* pLevelContainer, LevelAssets* pAssets)
     {
         if (!visitor) {
             assert(visitor != nullptr);
@@ -87,6 +97,7 @@ namespace ReGlacier
         m_zDefines.clear();
 
         LoadZDefines(visitor);
+        LoadProperties(visitor, pLevelContainer, pAssets);
         spdlog::info("DBG");
     }
 
@@ -197,6 +208,332 @@ namespace ReGlacier
         return true;
     }
 
+    class PRPWalkController : public IPRPVisitor
+    {
+        enum ContextFlag : unsigned int
+        {
+            CF_NONE      = 0,
+            CF_EOS       = 1 << 0,
+            CF_ERROR     = 1 << 1,
+            CF_OBJECT    = 1 << 2,
+            CF_ARRAY     = 1 << 3,
+            CF_CONTAINER = 1 << 4
+        };
+
+        unsigned int m_contextFlags { CF_NONE };
+
+    public:
+        void OnByte(PRPWalker* walker, uint8_t byte) override
+        {
+            if (IsEndOfStream()) return;
+
+            const size_t offset = walker->GetCurrentOffset() - 1;
+            const PRP_ETag tag = PRP_ETag_Helpers::FromByte(byte);
+
+
+            switch (tag) {
+                case TAG_Array:
+                case TAG_NamedArray:
+                {
+                    m_contextFlags |= ContextFlag::CF_ARRAY;
+
+                    uint32_t capacity = 0;
+
+                    Visit_I32(walker, ZToken::Void, capacity);
+                    assert(capacity > 0);
+
+                    spdlog::info("[OP| +{:0X}] Begin array (size {}, opcode {:2X})", offset, capacity, byte);
+                }
+                break;
+                case TAG_BeginObject:
+                case TAG_BeginNamedObject:
+                    m_contextFlags |= ContextFlag::CF_OBJECT;
+                    spdlog::info("[OP| +{:0X}] Begin object (opcode {:2X})", offset, byte);
+                    break;
+                case TAG_Container:
+                case TAG_NamedContainer:
+                {
+                    m_contextFlags |= ContextFlag::CF_CONTAINER;
+                    uint32_t v = 0;
+                    Visit_I32(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Begin container <{}> (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_EndArray:
+                    m_contextFlags &= ~ContextFlag::CF_ARRAY;
+                    spdlog::info("[OP| +{:0X}] End array", offset);
+                    break;
+                case TAG_EndObject:
+                    m_contextFlags &= ~(ContextFlag::CF_OBJECT | ContextFlag::CF_CONTAINER);
+                    spdlog::info("[OP| +{:0X}] End object", offset);
+                    break;
+                case TAG_EndOfStream:
+                    m_contextFlags |= ContextFlag::CF_EOS;
+                    spdlog::info("[OP| +{:0X}] >>> END OF STREAM <<<", offset);
+                    break;
+
+                case TAG_NamedReference:
+                case TAG_Reference:
+                    spdlog::info("[OP| +{:0X}] Reference (opcode {:2X})", offset, byte);
+                    assert(false);
+                    break;
+                case TAG_Char:
+                case TAG_NamedChar:
+                {
+                    uint8_t v = 0;
+                    Visit_I8(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Char {:c} (opcode {:2x})", offset, v, byte);
+                }
+                break;
+                case TAG_Bool:
+                case TAG_NamedBool:
+                {
+                    uint8_t v = 0;
+                    Visit_I8(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Bool {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_Int8:
+                case TAG_NamedInt8:
+                {
+                    uint8_t v = 0;
+                    Visit_I8(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Int8 {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_Int16:
+                case TAG_NamedInt16:
+                {
+                    uint16_t v = 0;
+                    Visit_I16(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Int16 {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_Int32:
+                case TAG_NamedInt32:
+                {
+                    uint32_t v = 0;
+                    Visit_I32(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Int32 {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_Float32:
+                case TAG_NamedFloat32:
+                {
+                    float v = .0f;
+                    Visit_F32(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Float32 {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_Float64:
+                case TAG_NamedFloat64:
+                {
+                    double v = .0f;
+                    Visit_F64(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] Float32 {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_String:
+                case TAG_NamedString:
+                {
+                    std::string v = {};
+                    Visit_String(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] String: \"{}\" (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_RawData:
+                case TAG_NamedRawData:
+                {
+                    size_t bufferSize { 0 };
+                    std::shared_ptr<uint8_t[]> buffer;
+
+                    Visit_RawBuffer(walker, ZToken::Void, buffer, bufferSize);
+
+                    if (buffer && bufferSize)
+                    {
+                        spdlog::info("[OP| +{:0X}] TAG_RawData (opcode {:2X}). Buffer of size {:08X} bytes", offset, byte, bufferSize);
+                        std::stringstream ss;
+
+                        for (size_t i = 0; i < bufferSize; i++)
+                        {
+                            if (i != 0 && i % 8 == 0) {
+                                ss << '\n';
+                            }
+                            else
+                            {
+                                ss << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buffer.get()[i]) << ' ';
+                            }
+                        }
+                        spdlog::info("{}", ss.str());
+                    }
+                    else
+                    {
+                        spdlog::error("[OP| +{:0X}] TAG_RawData (opcode {:2X}). Bad buffer!", offset, byte);
+                        assert(false);
+                    }
+                }
+                break;
+                case TAG_Bitfield:
+                case TAG_NameBitfield:
+                {
+                    uint32_t v { 0 };
+                    Visit_I32(walker, ZToken::Void, v);
+                    spdlog::info("[OP| +{:0X}] TAG_Bitfield: {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case TAG_SkipMark:
+                    spdlog::info("[OP| +{:0X}] TAG_SkipMark. Just skip current opcode", offset);
+                    break;
+                /// >>> MY TAGS <<<
+                case TAG_StringOrArray_E:
+                case TAG_StringOrArray_8E:
+                {
+                    if ((walker->GetHeaderBFlags() >> 2) & 1) {
+                        std::string s {};
+                        Visit_String(walker, ZToken::Void, s);
+                        spdlog::info("[OP| +{:0X}] TAG_StringOrArray. Read as string: {} (opcode {:2X})", offset, s, byte);
+                    }
+                    else
+                    {
+                        uint32_t v { 0 };
+                        Visit_I32(walker, ZToken::Void, v);
+                        spdlog::info("[OP| +{:0X}] TAG_StringOrArray. Read as array: {} (i32, opcode {:2X})", offset, v, byte);
+                    }
+                }
+                break;
+                case TAG_StringArray:
+                {
+                    if ((walker->GetHeaderBFlags() >> 2) & 1)
+                    {
+                        if ((walker->GetHeaderBFlags() >> 3) & 1)
+                        {
+                            //Impl #1
+                            uint32_t capacity { 0 };
+                            Visit_I32(walker, ZToken::Void, capacity);
+
+                            if (capacity == 0) {
+                                spdlog::info("[OP| +{:X}] TAG_StringArray (impl 1, opcode {:2X}). Array of strings: (EMPTY)", offset, byte);
+                            }
+                            else {
+                                spdlog::info("[OP| +{:X}] TAG_StringArray (impl 1, opcode {:2X}). Array of strings ({}): ", offset, byte, capacity);
+
+                                for (int i = 0; i < capacity; i++)
+                                {
+                                    std::string s;
+                                    Visit_String(walker, ZToken::Void, s);
+
+                                    spdlog::info("\t[{}] = \"{}\"", i, s);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            //Impl #2 (at 0x458CD0)
+                            spdlog::error("[OP| +{:X}] TAG_StringArray (impl 2, opcode {:2X}). Not implemented", offset, byte);
+                            assert(false);
+//                            uint32_t v1 { 0 };
+//                            Visit_I32(walker, ZToken::Void, v1); ///???????????
+//
+//                            uint32_t capacity { 0 };
+//                            Visit_I32(walker, ZToken::Void, capacity);
+//
+//                            if (capacity > 0)
+//                            {
+//                                uint32_t v2 { 0 };
+//                                Visit_I32(walker, ZToken::Void, v2);
+//
+//                            }
+                        }
+                    }
+                    else
+                    {
+                        uint32_t v { 0 };
+                        Visit_I32(walker, ZToken::Void, v);
+                        spdlog::info("[OP| +{:0X}] TAG_StringArray (impl 3, opcode {:2X}). Array as I32: {}", offset, byte, v);
+                    }
+                }
+                break;
+                /// ETC
+                case TAG_UNKNOWN:
+                {
+                    uint32_t v = 0;
+                    Visit_I32(walker, ZToken::Void, v);
+                    spdlog::warn("[OP| +{:0X}] TAK_UNKNOWN. Read next I32 {} (opcode {:2X})", offset, v, byte);
+                }
+                break;
+                case NO_TAG:
+                default:
+                {
+                    m_contextFlags |= ContextFlag::CF_ERROR;
+                    spdlog::error("[OP| +{:X}] Unknown opcode {:2X}", offset, byte);
+                    assert(false);
+                }
+                break;
+            }
+        }
+
+        void Reset()
+        {
+            m_contextFlags = ContextFlag::CF_NONE;
+        }
+
+        [[nodiscard]] bool IsInObject() const {
+            return m_contextFlags & ContextFlag::CF_OBJECT;
+        }
+
+        [[nodiscard]] bool IsInArray() const {
+            return m_contextFlags & ContextFlag::CF_ARRAY;
+        }
+
+        [[nodiscard]] bool IsInContainer() const {
+            return m_contextFlags & ContextFlag::CF_CONTAINER;
+        }
+
+        [[nodiscard]] bool IsEndOfStream() const {
+            return m_contextFlags & ContextFlag::CF_EOS;
+        }
+
+        [[nodiscard]] bool IsError() const {
+            return m_contextFlags & ContextFlag::CF_ERROR;
+        }
+    };
+
+    bool PRPWalker::LoadProperties(IPRPVisitor* visitor, LevelContainer* pLevel, LevelAssets* pAssets)
+    {
+        /**
+         * @note this is test code, please refactor this
+         * @todo REFACTOR THIS LATER
+         */
+        auto gms = std::make_unique<GMS>(pAssets->GMS, pLevel, pAssets);
+        if (!gms->Load())
+        {
+            spdlog::error("PRPWalker| Failed to load properties (unable to load GMS)");
+            return false;
+        }
+
+        auto geoms = gms->GetGeoms();
+        PRPWalkController controller {};
+
+        for (const auto& currentGeom : geoms)
+        {
+            spdlog::info("Processing properties for geom {} ({:0X})", currentGeom.groupName, currentGeom.id);
+            do
+            {
+                controller.OnByte(this, m_walker.ReadUInt8());
+            }
+            while ((controller.IsInContainer() || controller.IsInObject() || controller.IsInArray()) && !controller.IsEndOfStream() && !controller.IsError());
+
+            assert(!controller.IsError());
+
+            if (controller.IsEndOfStream())
+                break;
+
+            controller.Reset();
+        }
+
+        return true;
+    }
+
     uint8_t PRPWalker::GetCurrentByte() const {
         return m_walker.ReadInt8();
     }
@@ -286,15 +623,25 @@ namespace ReGlacier
         result = walker->m_tokenTable[index];
     }
 
+    void IPRPVisitor::Visit_RawBuffer(PRPWalker* walker,
+                                      PRPToken token,
+                                      std::shared_ptr<uint8_t[]>& buffer,
+                                      size_t& bufferSize) {
+        uint32_t size { 0 };
+
+        Visit_I32(walker, token, size);
+        if (size) {
+            bufferSize = size;
+
+            buffer = std::make_shared<uint8_t[]>(size);
+            walker->m_walker.ReadArray(buffer.get(), bufferSize);
+        }
+    }
+
     void IPRPVisitor::Visit_EndOfStream(PRPWalker* walker)
     {
         walker->m_flags |= PRPWalker::Flags::END_OF_STREAM;
         spdlog::info("IPRPVisitor| End of stream");
-    }
-
-    void IPRPVisitor::Visit_Unrecognized(PRPWalker* walker, size_t offset, uint8_t byte)
-    {
-        spdlog::warn("IPRPVisitor| Unrecognized byte of context. Byte {:2X} at +0x{:8X}", byte, offset);
     }
 
     template<>

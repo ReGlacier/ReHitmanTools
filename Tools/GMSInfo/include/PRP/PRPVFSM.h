@@ -12,10 +12,13 @@
 #include <memory>
 #include <cstdint>
 #include <variant>
-#include <unordered_map>
+#include <map>
 
 namespace ReGlacier
 {
+    class LevelContainer;
+    class LevelAssets;
+
     class IPRPVisitor;
     using PRPToken = uint32_t;
 
@@ -71,7 +74,7 @@ namespace ReGlacier
         size_t m_keysCount { 0 };
         size_t m_valuesOffset { 0 };
         std::vector<std::string> m_tokenTable {};
-        std::unordered_map<std::string, ZDefine_t> m_zDefines {};
+        std::map<std::string, ZDefine_t> m_zDefines {};
         SPRP m_header { 0 };
         BinaryWalker m_walker {};
 
@@ -80,14 +83,18 @@ namespace ReGlacier
 
         [[nodiscard]] bool IsEOS() const { return m_flags & Flags::END_OF_STREAM; };
         [[nodiscard]] bool HasErrors() const { return m_flags & Flags::ERROR_IN_STREAM; }
+        [[nodiscard]] uint32_t GetHeaderBFlags() const { return m_header.bFlags; }
 
-        void Prepare(IPRPVisitor* visitor);
+        void Prepare(IPRPVisitor* visitor, LevelContainer* pLevel, LevelAssets* pAssets);
 
     private:
         bool LoadZDefines(IPRPVisitor* visitor);
+        bool LoadProperties(IPRPVisitor* visitor, LevelContainer* pLevel, LevelAssets* pAssets);
 
     private:
         uint8_t GetCurrentByte() const;
+
+    public:
         size_t GetCurrentOffset() const;
     };
 
@@ -95,6 +102,12 @@ namespace ReGlacier
     {
     public:
         virtual ~IPRPVisitor() = default;
+
+        /**
+         * @brief This is debug function
+         * @note DEBUG ONLY
+         */
+        virtual void OnByte(PRPWalker* walker, uint8_t byte) {}
 
         virtual void ExchangeHeader(PRPWalker* walker, unsigned int type);
         virtual void ExchangeFooter(PRPWalker* walker, unsigned int type);
@@ -109,10 +122,9 @@ namespace ReGlacier
         virtual void Visit_F32(PRPWalker* walker, PRPToken token, float& result);
         virtual void Visit_F64(PRPWalker* walker, PRPToken token, double& result);
         virtual void Visit_String(PRPWalker* walker, PRPToken token, std::string& result);
+        virtual void Visit_RawBuffer(PRPWalker* walker, PRPToken token, std::shared_ptr<uint8_t[]>& buffer, size_t& bufferSize);
 
         virtual void Visit_EndOfStream(PRPWalker* walker);
-
-        virtual void Visit_Unrecognized(PRPWalker* walker, size_t offset, uint8_t byte);
 
         template <typename T> void ExchangeArray(PRPWalker* walker, PRPToken token, T* data, unsigned int size);
         template <> void ExchangeArray<uint32_t>(PRPWalker* walker, PRPToken token, uint32_t* data, unsigned int size);

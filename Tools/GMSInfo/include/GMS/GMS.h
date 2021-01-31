@@ -32,7 +32,8 @@ namespace ReGlacier
         void PrintInfo() override;
 
         [[nodiscard]] const std::vector<std::string>& GetExcludedAnimations() const;
-        [[nodiscard]] const std::vector<GMSLinkRef>& GetLinkReferences() const;
+        [[nodiscard,deprecated("Not working, please, use geoms instead of it")]] const std::vector<GMSLinkRef>& GetLinkReferences() const;
+        [[nodiscard]] const std::vector<GMSComposedInfoHolder>& GetGeoms() const;
 
         [[nodiscard]] std::unique_ptr<uint8_t[]> GetUncompressedBuffer(unsigned int& uncompressedSize);
     private:

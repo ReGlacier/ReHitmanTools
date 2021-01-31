@@ -54,7 +54,13 @@ namespace ReGlacier
         TAG_NamedRawData        = 0x8D,
         TAG_NameBitfield        = 0x8F,
         TAG_UNKNOWN, //14,16-123,128,142
-        NO_TAG
+        NO_TAG,
+
+        /// My tags
+        TAG_StringOrArray_E = 0xE,
+        TAG_StringOrArray_8E = 0x8E,
+
+        TAG_StringArray = 0xF,
     };
 
     struct PRP_ETag_Helpers

@@ -230,6 +230,10 @@ namespace ReGlacier
         return m_linkRefs;
     }
 
+    const std::vector<GMSComposedInfoHolder> & GMS::GetGeoms() const {
+        return m_geoms;
+    }
+
     std::unique_ptr<uint8_t[]> GMS::GetUncompressedBuffer(unsigned int& uncompressedSize)
     {
         return GetRawGMS(uncompressedSize);
