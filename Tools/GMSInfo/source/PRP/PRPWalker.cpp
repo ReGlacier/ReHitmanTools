@@ -47,7 +47,7 @@ namespace ReGlacier
 
         spdlog::info("PRPWalker| Tokens table is ready. Total tokens count is {}", m_header.totalKeysCount);
         m_walker.Seek(sizeof(SPRP) + m_header.dataOffset, BinaryWalker::BEGIN); //Reset position
-        m_walker.Seek(4, BinaryWalker::CURR); //HACK! TODO: Find a way to fix this
+        m_totalObjectsPresented = m_walker.ReadUInt32();
 
         m_zDefines.clear();
 
@@ -221,6 +221,8 @@ namespace ReGlacier
         return true;
     }
 
+    static int g_totalObjectsCount { 0 };
+
     bool PRPWalker::LoadProperties(IPRPVisitor* visitor)
     {
         do {
@@ -264,6 +266,7 @@ namespace ReGlacier
             break;
             case TAG_BeginObject:
             case TAG_BeginNamedObject:
+                ++g_totalObjectsCount;
                 m_contextFlags |= ContextFlag::CF_OBJECT;
                 visitor->Visit_BeginObject();
             break;

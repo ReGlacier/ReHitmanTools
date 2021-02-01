@@ -49,6 +49,7 @@ namespace ReGlacier
 
         SPRP m_header { 0 };
         BinaryWalker m_walker {};
+        uint32_t m_totalObjectsPresented { 0 };
 
         enum ContextFlag : unsigned int
         {
@@ -66,6 +67,7 @@ namespace ReGlacier
         PRPWalker(std::unique_ptr<uint8_t[]>&& buffer, size_t bufferSize);
 
         [[nodiscard]] uint32_t GetHeaderBFlags() const { return m_header.bFlags; }
+        [[nodiscard]] uint32_t GetTotalObjectsCount() const { return m_totalObjectsPresented; }
 
         bool Prepare(IPRPVisitor* visitor);
 
