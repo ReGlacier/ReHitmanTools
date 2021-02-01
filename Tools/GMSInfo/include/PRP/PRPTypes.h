@@ -5,6 +5,40 @@
 
 namespace ReGlacier
 {
+#pragma pack(push, 1)
+    struct SPRP
+    {
+        static constexpr size_t kMagicSize = 0xE;
+
+        char magic[kMagicSize];     //0x0
+        bool bIsRaw;                //0xE
+        uint32_t bFlags;            //0xF
+        uint32_t __Unknown__;       //0x13;
+        uint32_t totalKeysCount;    //0x17
+        uint32_t dataOffset;        //0x1B
+    };
+#pragma pack(pop)
+
+    using PRPToken = uint32_t;
+
+    struct ZToken
+    {
+        static constexpr PRPToken Void    = 0x0FFFFFFFF;
+        static constexpr PRPToken Unknown = 0x0FFFFFFFE;
+        static constexpr PRPToken Joker   = 0x0FFFFFFFD;
+    };
+
+    enum EPropertyType : unsigned int
+    {
+        Type_14 = 0xE,
+        Type_10 = 0xA,
+        Type_9 = 0x9,
+        Type_8 = 0x8,
+        Type_7 = 0x7,
+        Type_2 = 0x2,
+        Type_1 = 0x1
+    };
+
     enum PRP_ETag : uint8_t
     {
         TAG_Array               = 0x1,
@@ -20,6 +54,8 @@ namespace ReGlacier
         TAG_Float64             = 0xB,
         TAG_String              = 0xC,
         TAG_RawData             = 0xD,
+        TAG_StringOrArray_E     = 0xE,
+        TAG_StringArray         = 0xF,
         TAG_Bitfield            = 0x10,
         TAG_EndArray            = 0x7C,
         TAG_SkipMark            = 0x7D,
@@ -38,16 +74,9 @@ namespace ReGlacier
         TAG_NamedFloat64        = 0x8B,
         TAG_NamedString         = 0x8C,
         TAG_NamedRawData        = 0x8D,
+        TAG_StringOrArray_8E    = 0x8E,
         TAG_NameBitfield        = 0x8F,
-        TAG_UNKNOWN, //14,16-123,128,142
-        NO_TAG
-    };
-
-    struct PRP_ETag_Helpers
-    {
-        static PRP_ETag FromByte(uint8_t byte);
-        static std::string_view ToString(PRP_ETag tag);
-        static bool IsTagIncreaseDepthLevel(PRP_ETag tag);
-        static bool IsTagDecreateDepthLevel(PRP_ETag tag);
+        TAG_UNKNOWN, //16-123,128,142
+        NO_TAG,
     };
 }
