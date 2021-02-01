@@ -136,12 +136,19 @@ namespace ReGlacier
             Exchange_I32(typeId);
             ExchangeFooter(EPropertyType::Type_8);
 
-            ZDefine_t value;
+            ZDefine_t value {};
+
+            constexpr uint32_t kTypeId_Array_I32 = 2;
+            constexpr uint32_t kTypeId_Array_F32 = 3;
+            constexpr uint32_t kTypeId_StringRef_Type1 = 0xC;
+            constexpr uint32_t kTypeId_StringRef_Type2 = 0xE;
+            constexpr uint32_t kTypeId_StringRef_Type3 = 0x10;
+            constexpr uint32_t kTypeId_StringREFTAB = 0x11;
 
             /// Read internal data
             switch (typeId)
             {
-                case 2:
+                case kTypeId_Array_I32:
                 {
                     uint32_t size { 0 };
 
@@ -156,9 +163,14 @@ namespace ReGlacier
                     ExchangeArray<uint32_t>(vec.data(), size);
 
                     value = vec;
+
+                    spdlog::info("ZDefine| Array_I32 \"{}\" (length is {}):", name, size);
+                    for (const auto& entry: vec) {
+                        spdlog::info("ZDefine| Array_I32::Entry {}", entry);
+                    }
                 }
                 break;
-                case 3:
+                case kTypeId_Array_F32:
                 {
                     uint32_t size { 0 };
 
@@ -173,28 +185,37 @@ namespace ReGlacier
                     ExchangeArray<float>(vec.data(), size);
 
                     value = vec;
+
+                    spdlog::info("ZDefine| Array_F32 \"{}\" (length is {}):", name, size);
+                    for (const auto& entry: vec) {
+                        spdlog::info("ZDefine| Array_F32::Entry {:F}", entry);
+                    }
                 }
                 break;
-                case 0xC:
-                case 0xE:
-                case 0x10:
+                case kTypeId_StringRef_Type1:
+                case kTypeId_StringRef_Type2:
+                case kTypeId_StringRef_Type3:
                 {
-                    std::string geomRefStr;
+                    std::string geomRefStr {};
 
                     ExchangeHeader(EPropertyType::Type_2 | EPropertyType::Type_8 | EPropertyType::Type_1);
                     Exchange_String(geomRefStr);
                     ExchangeFooter(EPropertyType::Type_2 | EPropertyType::Type_8 | EPropertyType::Type_1);
 
                     value = geomRefStr;
+
+                    spdlog::info("ZDefine| STRREF ({:X}) {} = \"{}\"", typeId, name, geomRefStr);
                 }
                 break;
-                case 0x11:
+                case kTypeId_StringREFTAB:
                 {
                     unsigned int elementsNr { 0 };
 
                     ExchangeContainer(&elementsNr);
                     std::vector<std::string> reftab;
                     reftab.reserve(elementsNr);
+
+                    spdlog::info("ZDefine| REFTAB \"{}\" (length is {}):", name, elementsNr);
 
                     for (int j = 0; j < elementsNr; j++)
                     {
@@ -204,13 +225,15 @@ namespace ReGlacier
                         ExchangeFooter(EPropertyType::Type_2 | EPropertyType::Type_8 | EPropertyType::Type_1);
 
                         reftab.push_back(geomName);
+
+                        spdlog::info("ZDefine| REFTAB::Entry \"{}\"", geomName);
                     }
 
                     value = reftab;
                 }
                 break;
                 default:
-                    spdlog::warn("Unknown type id {}", typeId);
+                    spdlog::error("ZDefine| Unknown type id {}", typeId);
                     assert(false);
                     break;
             }
@@ -220,8 +243,6 @@ namespace ReGlacier
 
         return true;
     }
-
-    static int g_totalObjectsCount { 0 };
 
     bool PRPWalker::LoadProperties(IPRPVisitor* visitor)
     {
@@ -266,7 +287,6 @@ namespace ReGlacier
             break;
             case TAG_BeginObject:
             case TAG_BeginNamedObject:
-                ++g_totalObjectsCount;
                 m_contextFlags |= ContextFlag::CF_OBJECT;
                 visitor->Visit_BeginObject();
             break;
